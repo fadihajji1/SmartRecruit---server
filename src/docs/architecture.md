@@ -10,8 +10,8 @@ The architecture uses:
 | Component                           | Description                                                                                                          |
 | ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | 7 Business Services                 | Core domain services organized around business capabilities.                                                         |
-| Spring Cloud Gateway                | Central API entry point for routing, security, and request management.                                               |
-| Kubernetes-Native Service Discovery | Built-in service discovery and networking within Kubernetes clusters.                                                |
+| Spring Cloud Gateway                | Central API entry point for path-based routing and JWT validation.                                                   |
+| Kubernetes-Native Service Discovery | Kubernetes Services provide stable DNS names and load balancing between gateway and backend workloads.              |
 | PostgreSQL (Database-per-Service)   | Each microservice owns its dedicated PostgreSQL database.                                                            |
 | Apache Kafka                        | Asynchronous domain event streaming and inter-service communication.                                                 |
 | OpenFeign / REST                    | Synchronous service-to-service communication.                                                                        |
@@ -846,10 +846,10 @@ SmartRecruit supports Docker Compose for development and Kubernetes for producti
 
 ### Development
 
-Docker Compose runs the application and infrastructure locally:
+Docker Compose runs shared development infrastructure locally. Application services can be run separately:
 
 ```text
-Docker Compose
+Docker Compose infrastructure
 ├── API Gateway
 ├── Identity Service
 ├── Recruitment Service
@@ -864,7 +864,34 @@ Docker Compose
 └── MinIO
 ```
 
+### API gateway
+
+The `api-gateway` Spring Cloud Gateway application is the public API entry point. It preserves request paths and routes by `/api/v1` path families to the corresponding backend. Identity registration and login paths are public; other paths require a valid JWT signed with the same `IDENTITY_JWT_SECRET` and issuer as Identity Service. The bearer token is forwarded to the backend, which remains responsible for its own authorization.
+
+| Path family | Kubernetes Service |
+| ----------- | ------------------ |
+| `/api/v1/auth/**`, `/api/v1/users/**` | `identity-service` |
+| `/api/v1/jobs/**`, `/api/v1/applications/**`, `/api/v1/businesses/**` | `recruitment-service` |
+| `/api/v1/candidates/**`, `/api/v1/cvs/**`, `/api/v1/ai/**` | `candidate-ai-service` |
+| `/api/v1/subscriptions/**`, `/api/v1/plans/**` | `subscription-service` |
+| `/api/v1/interviews/**` | `interview-service` |
+| `/api/v1/notifications/**` | `notification-service` |
+| `/api/v1/analytics/**` | `analytics-service` |
+
 ### Production
+
+Apply `kubernetes/api-gateway.yaml` for the gateway Deployment/LoadBalancer Service and stable ClusterIP Services for backend workloads. Build and publish the gateway image from the repository root:
+
+```text
+mvn -pl services/api-gateway -am package
+docker build -t smartrecruit/api-gateway:latest -f services/api-gateway/Dockerfile .
+```
+
+Push the image to a registry accessible by the cluster, or update the manifest to the published image.
+
+Backend Deployments are managed separately and must expose the matching `app` label and container port declared by their Kubernetes Service. The identity service uses port `8082`; the other services use `8080`. Create the `smartrecruit-secrets` Kubernetes Secret with key `identity-jwt-secret` before starting the gateway.
+
+Gateway routes use Kubernetes Service DNS names directly (for example, `identity-service:8082`). Kubernetes DNS and ClusterIP Services provide discovery and in-cluster load balancing; no Eureka server, Kubernetes API credentials, or Spring Cloud Kubernetes discovery client is required.
 
 Kubernetes provides the deployment platform:
 
@@ -888,7 +915,7 @@ Kubernetes provides:
 - Configuration management
 - Secret management
 
-No Eureka server is required because Kubernetes provides service discovery.
+No Eureka server is required because Kubernetes provides service discovery. The gateway manifest exposes the API with a `LoadBalancer` Service; use the cluster's ingress or load-balancer integration as appropriate for the target environment.
 
 Redis should be deployed and configured for the required persistence and availability level of the target environment.
 
