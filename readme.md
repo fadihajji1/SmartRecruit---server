@@ -35,19 +35,27 @@ cd <REPOSITORY_FOLDER>
 
 ```dotenv
 # .env.exemple content
-POSTGRES_PASSWORD=YourLocalPostgresPassword
-REDIS_PASSWORD=YourLocalRedisPassword
+# PostgreSQL
+POSTGRES_PASSWORD=postgres
 
-IDENTITY_JWT_SECRET=ReplaceWithARandomSecretOfAtLeast32Characters
-IDENTITY_JWT_ISSUER=smartrecruit-identity
-IDENTITY_ADMIN_PASSWORD=YourLocalAdminPassword
+# Redis
+REDIS_PASSWORD=redis
 
+# JWT: shared by Service and API Gateway
+JWT_SECRET=replace_with_a_generated_random_secret
+JWT_ISSUER=smartrecruit
+
+# Local platform administrator bootstrap
+ADMIN_PASSWORD=admin
+
+# MinIO
 MINIO_ROOT_USER=smartrecruitMinio
-MINIO_ROOT_PASSWORD=YourLocalMinioPassword
+MINIO_ROOT_PASSWORD=SmartRecruitLocalMinio_2026
 MINIO_BUCKET=smartrecruit-private
 
-PGADMIN_DEFAULT_EMAIL=admin@smartrecruit.local
-PGADMIN_DEFAULT_PASSWORD=YourLocalPgAdminPassword
+# pgAdmin: local development only
+PGADMIN_DEFAULT_EMAIL=admin@admin.com
+PGADMIN_DEFAULT_PASSWORD=admin
 ```
 
 **or**
