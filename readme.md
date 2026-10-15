@@ -8,14 +8,12 @@ SmartRecruit is a recruitment platform built with Spring Boot microservices.
 
 Install the following software before running the project.
 
-
 | Software       | Requirement           | Download                                                                                               |
 | -------------- | --------------------- | ------------------------------------------------------------------------------------------------------ |
 | Git            | Latest stable version | [https://git-scm.com/downloads](https://git-scm.com/downloads)                                         |
 | Java JDK       | 21                    | [https://adoptium.net/temurin/releases/?version=21](https://adoptium.net/temurin/releases/?version=21) |
 | Docker Desktop | Latest stable version | [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)     |
 | IDE            | Optional              | [https://code.visualstudio.com/](https://code.visualstudio.com/)                                       |
-
 
 Important: Docker Desktop must be running before starting the project.
 
@@ -91,10 +89,14 @@ Docker Compose starts : Configured databases, Redis, Kafka, Kafka UI, MinIO, pgA
 Open PowerShell in the project root.
 
 ```
-# Step 1 — Build the application images
+# step 0  check the docker compose file is valid
+docker compose config --quiet
+# Step 1 — Build the application images from dockerfile
 docker compose build
 # Step 2 — Start the services
 docker compose up -d
+# Step 2 — Start the services without build
+docker compose up -d --no-build
 # Step 3 — Check container status
 docker compose ps
 ```
@@ -102,7 +104,6 @@ docker compose ps
 ## 6. Access the Local Services
 
 When the containers are running, use these addresses.
-
 
 | Component                   | Address                                                                        |
 | --------------------------- | ------------------------------------------------------------------------------ |
@@ -123,7 +124,6 @@ When the containers are running, use these addresses.
 | Kafka                       | `localhost:9093`                                                               |
 | MinIO S3 API                | [http://localhost:9002](http://localhost:9002)                                 |
 | Swagger-ui                  | [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html) |
-
 
 The application endpoints may differ from these infrastructure addresses if the configuration has been changed.
 
@@ -155,7 +155,7 @@ Review the endpoints exposed by the Identity Service.
 
 ---
 
-## 10. Troubleshooting
+## 9. Troubleshooting
 
 ### Port already in use
 
@@ -169,7 +169,7 @@ If a port is occupied, stop the conflicting application or update the correspond
 
 ---
 
-## 11. Stop the Project
+## 10. Stop the Project
 
 Stop the containers without deleting local data:
 
@@ -183,7 +183,7 @@ Start them again later with:
 docker compose up -d
 ```
 
-## 12. Reset the Development Environment
+## 11. Reset the Development Environment
 
 **Warning: This permanently deletes the Docker volumes managed by this Compose project**, including local database records, Redis data, Kafka data, MinIO files, and pgAdmin state.
 
@@ -195,4 +195,65 @@ docker compose down -v
 docker compose up --build -d
 ```
 
- 
+## 12. Build and Cache Maintenance
+
+### Clear Maven build output
+
+From your project root, in PowerShell:
+
+```powershell
+.\mvnw.cmd clean
+```
+
+If you don't have the Maven Wrapper, use:
+
+```powershell
+mvn clean
+```
+
+This removes generated build output such as `target/`; it does not delete your source code or PostgreSQL data.
+
+or
+
+skip tests
+
+```
+mvn clean package -DskipTests
+```
+
+### Clear Docker build cache
+
+To remove unused Docker build cache:
+
+```powershell
+docker builder prune
+```
+
+To remove all unused build cache:
+
+```powershell
+docker builder prune --all
+```
+
+This does not delete your database volumes.
+
+### Rebuild SmartRecruit application images
+
+After changing Java code or the Dockerfile:
+
+```powershell
+docker compose build --no-cache identity-service api-gateway
+docker compose up -d --force-recreate identity-service api-gateway
+```
+
+This rebuilds those two services without using cached build layers.
+
+### Clear Redis cache
+
+To clear all cached Redis data:
+
+```powershell
+docker exec -it smartrecruit-redis redis-cli --no-auth-warning -a "YOUR_REDIS_PASSWORD" FLUSHDB
+```
+
+Replace `YOUR_REDIS_PASSWORD` with the value from your `.env` file. This deletes all keys in the selected Redis database, so use it only if that database contains disposable cache data.

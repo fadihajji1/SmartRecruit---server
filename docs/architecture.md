@@ -4,21 +4,164 @@
 
 SmartRecruit is a distributed microservices platform built with **React/TypeScript** and **Spring Boot**.
 
-The architecture uses:
+## Project Structure
 
+```
+SmartRecruit/
+├── docs
+│   ├── 0- technical specifications.md
+│   ├── 0- used system design.md
+│   ├── actors.md
+│   ├── architecture.md
+│   ├── contribution-guide.md
+│   ├── database.md
+│   ├── endpoints.md
+│   ├── implementation-phases.md
+│   ├── production.md
+│   ├── roadmap.md
+│   └── SmartRecruit_Documentation_Updated.rar
+├── kubernetes
+│   ├── api-gateway
+│   │   ├── api-gateway-deployment.yaml
+│   │   └── api-gateway-service.yaml
+│   ├── analytics-service.yaml
+│   ├── candidate-ai-service.yaml
+│   ├── identity-service.yaml
+│   ├── interview-service.yaml
+│   ├── notification-service.yaml
+│   ├── recruitment-service.yaml
+│   └── subscription-service.yaml
+├── services
+│   ├── analytics-service
+│   │   ├── src
+│   │   │   ├── main
+│   │   │   │   ├── java
+│   │   │   │   │   └── com
+│   │   │   │   └── resources
+│   │   │   │       └── application.properties
+│   │   │   └── test
+│   │   │       └── java
+│   │   │           └── com
+│   │   └── pom.xml
+│   ├── api-gateway
+│   │   ├── src
+│   │   │   ├── main
+│   │   │   │   ├── java
+│   │   │   │   │   └── com
+│   │   │   │   └── resources
+│   │   │   │       └── application.yml
+│   │   │   └── test
+│   │   │       └── java
+│   │   │           └── com
+│   │   ├── Dockerfile
+│   │   └── pom.xml
+│   ├── candidate-ai-service
+│   │   ├── src
+│   │   │   ├── main
+│   │   │   │   ├── java
+│   │   │   │   │   └── com
+│   │   │   │   └── resources
+│   │   │   │       └── application.properties
+│   │   │   └── test
+│   │   │       └── java
+│   │   │           └── com
+│   │   └── pom.xml
+│   ├── identity-service
+│   │   ├── src
+│   │   │   ├── main
+│   │   │   │   ├── java
+│   │   │   │   │   └── com
+│   │   │   │   └── resources
+│   │   │   │       ├── db
+│   │   │   │       └── application.yml
+│   │   │   └── test
+│   │   │       └── java
+│   │   │           └── com
+│   │   └── pom.xml
+│   ├── interview-service
+│   │   ├── src
+│   │   │   ├── main
+│   │   │   │   ├── java
+│   │   │   │   │   └── com
+│   │   │   │   └── resources
+│   │   │   │       └── application.properties
+│   │   │   └── test
+│   │   │       └── java
+│   │   │           └── com
+│   │   └── pom.xml
+│   ├── notification-service
+│   │   ├── src
+│   │   │   ├── main
+│   │   │   │   ├── java
+│   │   │   │   │   └── com
+│   │   │   │   └── resources
+│   │   │   │       └── application.properties
+│   │   │   └── test
+│   │   │       └── java
+│   │   │           └── com
+│   │   └── pom.xml
+│   ├── recruitment-service
+│   │   ├── src
+│   │   │   ├── main
+│   │   │   │   ├── java
+│   │   │   │   │   └── com
+│   │   │   │   └── resources
+│   │   │   │       └── application.properties
+│   │   │   └── test
+│   │   │       └── java
+│   │   │           └── com
+│   │   └── pom.xml
+│   └── subscription-service
+│       ├── src
+│       │   ├── main
+│       │   │   ├── java
+│       │   │   │   └── com
+│       │   │   └── resources
+│       │   │       └── application.properties
+│       │   └── test
+│       │       └── java
+│       │           └── com
+│       └── pom.xml
+├── src
+│   ├── main
+│   │   └── java
+│   │       └── com
+│   │           └── smartrecruit
+│   └── test
+│       └── java
+│           └── com
+│               └── smartrecruit
+│                   ├── analytics
+│                   ├── candidateai
+│                   ├── interview
+│                   ├── notification
+│                   ├── recruitment
+│                   └── subscription
+├── .env.example
+├── all_docs.txt
+├── all_services_codes.txt
+├── docker-compose.yml
+├── Dockerfile
+├── HELP.md
+├── mvnw
+├── mvnw.cmd
+├── pom.xml
+└── readme.md
+```
 
-| Component                           | Description                                                                                                          |
-| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| 7 Business Services                 | Core domain services organized around business capabilities.                                                         |
-| Spring Cloud Gateway                | Central API entry point for path-based routing and JWT validation.                                                   |
-| Kubernetes-Native Service Discovery | Kubernetes Services provide stable DNS names and load balancing between gateway and backend workloads.              |
-| PostgreSQL (Database-per-Service)   | Each microservice owns its dedicated PostgreSQL database.                                                            |
-| Apache Kafka                        | Asynchronous domain event streaming and inter-service communication.                                                 |
-| OpenFeign / REST                    | Synchronous service-to-service communication.                                                                        |
-| Redis                               | Selective caching layer for read-heavy and frequently accessed data.                                                 |
-| MinIO                               | Object storage for CVs, employment-proof documents, and other files.                                                 |
-| External Integrations               | AI providers, payment gateways, email services, webhooks. |
+## The architecture uses:
 
+| Component                           | Description                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| 7 Business Services                 | Core domain services organized around business capabilities.                                           |
+| Spring Cloud Gateway                | Central API entry point for path-based routing and JWT validation.                                     |
+| Kubernetes-Native Service Discovery | Kubernetes Services provide stable DNS names and load balancing between gateway and backend workloads. |
+| PostgreSQL (Database-per-Service)   | Each microservice owns its dedicated PostgreSQL database.                                              |
+| Apache Kafka                        | Asynchronous domain event streaming and inter-service communication.                                   |
+| OpenFeign / REST                    | Synchronous service-to-service communication.                                                          |
+| Redis                               | Selective caching layer for read-heavy and frequently accessed data.                                   |
+| MinIO                               | Object storage for CVs, employment-proof documents, and other files.                                   |
+| External Integrations               | AI providers, payment gateways, email services, webhooks.                                              |
 
 ### Core principles
 
@@ -36,7 +179,6 @@ The architecture uses:
 
 ## 2. Business Services
 
-
 | #   | Service              | Responsibilities                                         | Storage            |
 | --- | -------------------- | -------------------------------------------------------- | ------------------ |
 | 1   | Identity Service     | Authentication, users, profiles, recruiter approval, JWT | PostgreSQL         |
@@ -46,7 +188,6 @@ The architecture uses:
 | 5   | Interview Service    | Scheduling, rescheduling, cancellation, delay requests   | PostgreSQL         |
 | 6   | Notification Service | Email, in-app, webhook notifications                     | PostgreSQL         |
 | 7   | Analytics Service    | Analytics read models and PDF reports                    | PostgreSQL + Redis |
-
 
 ### Service boundaries
 
@@ -163,6 +304,8 @@ Identity Service
 
 A Feign client must call another service's API. It must never access that service's database.
 
+Feign requests that act on behalf of a user propagate the bearer token; the receiving service validates it rather than trusting the caller or gateway alone.
+
 Synchronous calls should use appropriate resilience controls:
 
 - Connection timeout
@@ -170,6 +313,8 @@ Synchronous calls should use appropriate resilience controls:
 - Bounded retry
 - Circuit breaker
 - Bulkhead where required
+
+Resilience4j supplies these fault-tolerance controls for synchronous service calls. Retries should be limited to safe transient failures.
 
 ### 5.2 Asynchronous communication — Kafka
 
@@ -282,7 +427,9 @@ Candidate registration activates the account.
 
 Recruiter registration creates a pending account until administrator approval.
 
-JWT carries stable identity and role information.
+Spring Security provides stateless authentication with JWT bearer tokens. The Identity Service issues tokens carrying stable identity and role information; protected services validate the token and do not rely on an HTTP session.
+
+Passwords are stored as BCrypt hashes, never as plaintext.
 
 Authorization follows a layered model:
 
@@ -303,6 +450,22 @@ Operation
 ```
 
 Authentication and authorization state remain authoritative in Identity Service and PostgreSQL. Redis is not used as the authoritative security store.
+
+### API security controls
+
+- Spring Cloud Gateway is the public API entry point. It validates JWTs on protected routes and forwards the bearer token to backend services for their own validation and authorization.
+- Public API traffic uses HTTPS/TLS at the deployment edge; internal service traffic must use the environment's approved transport protections.
+- Every service validates request data server-side. Frontend validation improves usability but is not a security boundary.
+- Spring Security protects authenticated endpoints. RBAC restricts operations by role, with resource and company ownership checks for object-level access.
+- Registration and login are public; other routes are protected unless explicitly documented as public.
+
+| Control          | Responsibility                                                                                                                 |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Authentication   | Spring Security and stateless JWT bearer-token validation                                                                      |
+| Authorization    | RBAC, resource/company ownership checks, and subscription entitlements                                                         |
+| Password storage | BCrypt password hashing                                                                                                        |
+| API perimeter    | API Gateway, HTTPS/TLS, server-side input validation, and endpoint protection                                                  |
+| Service calls    | OpenFeign with bearer-token propagation where acting for a user, downstream token validation, and Resilience4j fault tolerance |
 
 ---
 
@@ -498,7 +661,6 @@ Transactional services optimize for correct business writes, while Analytics opt
 
 CQRS is not applied to every service.
 
-
 | Service      | CQRS      |
 | ------------ | --------- |
 | Identity     | No        |
@@ -508,7 +670,6 @@ CQRS is not applied to every service.
 | Interview    | No        |
 | Notification | No        |
 | Analytics    | Yes       |
-
 
 Recruitment may introduce a dedicated read model later if public search becomes sufficiently complex or high-volume.
 
@@ -525,7 +686,6 @@ Redis      = Cache
 
 ### Recommended usage
 
-
 | Data                         | Cache?       | Reason                           |
 | ---------------------------- | ------------ | -------------------------------- |
 | Public job timeline          | Yes          | High read volume                 |
@@ -540,7 +700,6 @@ Redis      = Cache
 | Interview state              | No           | Strong consistency               |
 | Billing history              | No           | Transactional data               |
 | Notification state           | Optional     | PostgreSQL remains authoritative |
-
 
 ---
 
@@ -583,7 +742,6 @@ reference:contract-types
 
 Initial TTLs should be tuned through performance testing.
 
-
 | Data                | Initial TTL  |
 | ------------------- | ------------ |
 | Individual job      | 5–15 minutes |
@@ -591,7 +749,6 @@ Initial TTLs should be tuned through performance testing.
 | Search results      | 1–5 minutes  |
 | Filter results      | 1–5 minutes  |
 | Reference data      | Longer TTL   |
-
 
 ---
 
@@ -634,13 +791,11 @@ The database remains authoritative if cache invalidation fails. A later cache mi
 
 Redis and Kafka solve different problems.
 
-
 | Technology | Responsibility                               |
 | ---------- | -------------------------------------------- |
 | PostgreSQL | Authoritative business data                  |
 | Redis      | Low-latency cache and read acceleration      |
 | Kafka      | Asynchronous communication and domain events |
-
 
 Kafka handles:
 
@@ -708,7 +863,6 @@ All cache entries require TTLs to prevent indefinite staleness. Event-driven inv
 
 Resilience is required for synchronous service calls and external integrations where failures are possible.
 
-
 | Pattern              | Purpose                                         |
 | -------------------- | ----------------------------------------------- |
 | Timeout              | Prevent indefinite synchronous calls            |
@@ -718,7 +872,6 @@ Resilience is required for synchronous service calls and external integrations w
 | Kafka retry / DLQ    | Handle failed event processing                  |
 | Idempotent consumers | Tolerate duplicate event delivery               |
 | Transactional outbox | Coordinate database changes and outgoing events |
-
 
 Retries must be limited to transient failures and safe/idempotent operations. Resource-creating `POST` operations must not be blindly retried unless idempotency is guaranteed.
 
@@ -774,7 +927,6 @@ The pattern prevents a successful database transaction from being committed whil
 
 Every service owns its own PostgreSQL database.
 
-
 | Service      | Database                    |
 | ------------ | --------------------------- |
 | Identity     | `smartrecruit_identity`     |
@@ -784,7 +936,6 @@ Every service owns its own PostgreSQL database.
 | Interview    | `smartrecruit_interview`    |
 | Notification | `smartrecruit_notification` |
 | Analytics    | `smartrecruit_analytics`    |
-
 
 ### Ownership rules
 
@@ -868,15 +1019,15 @@ Docker Compose infrastructure
 
 The `api-gateway` Spring Cloud Gateway application is the public API entry point. It preserves request paths and routes by `/api/v1` path families to the corresponding backend. Identity registration and login paths are public; other paths require a valid JWT signed with the same `IDENTITY_JWT_SECRET` and issuer as Identity Service. The bearer token is forwarded to the backend, which remains responsible for its own authorization.
 
-| Path family | Kubernetes Service |
-| ----------- | ------------------ |
-| `/api/v1/auth/**`, `/api/v1/users/**` | `identity-service` |
-| `/api/v1/jobs/**`, `/api/v1/applications/**`, `/api/v1/businesses/**` | `recruitment-service` |
-| `/api/v1/candidates/**`, `/api/v1/cvs/**`, `/api/v1/ai/**` | `candidate-ai-service` |
-| `/api/v1/subscriptions/**`, `/api/v1/plans/**` | `subscription-service` |
-| `/api/v1/interviews/**` | `interview-service` |
-| `/api/v1/notifications/**` | `notification-service` |
-| `/api/v1/analytics/**` | `analytics-service` |
+| Path family                                                           | Kubernetes Service     |
+| --------------------------------------------------------------------- | ---------------------- |
+| `/api/v1/auth/**`, `/api/v1/users/**`                                 | `identity-service`     |
+| `/api/v1/jobs/**`, `/api/v1/applications/**`, `/api/v1/businesses/**` | `recruitment-service`  |
+| `/api/v1/candidates/**`, `/api/v1/cvs/**`, `/api/v1/ai/**`            | `candidate-ai-service` |
+| `/api/v1/subscriptions/**`, `/api/v1/plans/**`                        | `subscription-service` |
+| `/api/v1/interviews/**`                                               | `interview-service`    |
+| `/api/v1/notifications/**`                                            | `notification-service` |
+| `/api/v1/analytics/**`                                                | `analytics-service`    |
 
 ### Production
 
@@ -1006,5 +1157,3 @@ The following rules are architectural constraints:
 - Application status, interview state, and billing history remain authoritative in PostgreSQL.
 - Analytics may use a dedicated CQRS read model because its read requirements differ from transactional workloads.
 - Cache failures must not make business data unavailable; services must be able to fall back to PostgreSQL.
-
- 
