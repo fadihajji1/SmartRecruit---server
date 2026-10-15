@@ -1,0 +1,55 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      server:
+        webflux:
+          httpclient:
+            connect-timeout: 2000
+            response-timeout: 5s
+
+          routes:
+            - id: identity-service
+              uri: ${IDENTITY_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/v1/auth/**,/api/v1/users/**
+
+            - id: recruitment-service
+              uri: ${RECRUITMENT_SERVICE_URL:http://localhost:8090}
+              predicates:
+                - Path=/api/v1/jobs/**,/api/v1/applications/**,/api/v1/businesses/**
+
+            - id: candidate-ai-service
+              uri: ${CANDIDATE_AI_SERVICE_URL:http://localhost:8091}
+              predicates:
+                - Path=/api/v1/candidates/**,/api/v1/cvs/**,/api/v1/ai/**
+
+            - id: subscription-service
+              uri: ${SUBSCRIPTION_SERVICE_URL:http://localhost:8092}
+              predicates:
+                - Path=/api/v1/subscriptions/**,/api/v1/plans/**
+
+            - id: interview-service
+              uri: ${INTERVIEW_SERVICE_URL:http://localhost:8093}
+              predicates:
+                - Path=/api/v1/interviews/**
+
+            - id: notification-service
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8094}
+              predicates:
+                - Path=/api/v1/notifications/**
+
+            - id: analytics-service
+              uri: ${ANALYTICS_SERVICE_URL:http://localhost:8095}
+              predicates:
+                - Path=/api/v1/analytics/**
+
+identity:
+  jwt:
+    secret: ${IDENTITY_JWT_SECRET}
+    issuer: ${IDENTITY_JWT_ISSUER:smartrecruit-identity}
