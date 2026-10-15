@@ -44,6 +44,7 @@ JWT_SECRET=replace_with_a_generated_random_secret
 JWT_ISSUER=smartrecruit
 
 # Local platform administrator bootstrap
+ADMIN_EMAIL=admin@admin.com
 ADMIN_PASSWORD=admin
 
 # MinIO
@@ -127,6 +128,26 @@ When the containers are running, use these addresses.
 
 The application endpoints may differ from these infrastructure addresses if the configuration has been changed.
 
+### pgAdmin Server Configuration
+
+When logging into pgAdmin at [http://localhost:5050](http://localhost:5050) (Email: `admin@admin.com`, Password: `admin` or value from `.env`):
+
+> **Note:** Because pgAdmin runs inside the Docker network, use the internal service hostname (e.g. `identity-db`) and port `5432`, **not** `localhost` or mapped host ports.
+
+Register each service database under **Servers > Register > Server...**:
+
+| Service | General: **Name** | Connection: **Host** | Connection: **Port** | Connection: **Maintenance DB** | Connection: **Username** | Connection: **Password** |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Identity** | `Identity DB` | `identity-db` | `5432` | `identity_db` | `smartrecruit` | `postgres` |
+| **Recruitment** | `Recruitment DB` | `recruitment-db` | `5432` | `recruitment_db` | `smartrecruit` | `postgres` |
+| **Candidate / AI** | `Candidate DB` | `candidate-db` | `5432` | `candidate_db` | `smartrecruit` | `postgres` |
+| **Subscription** | `Subscription DB` | `subscription-db` | `5432` | `subscription_db` | `smartrecruit` | `postgres` |
+| **Interview** | `Interview DB` | `interview-db` | `5432` | `interview_db` | `smartrecruit` | `postgres` |
+| **Notification** | `Notification DB` | `notification-db` | `5432` | `notification_db` | `smartrecruit` | `postgres` |
+| **Analytics** | `Analytics DB` | `analytics-db` | `5432` | `analytics_db` | `smartrecruit` | `postgres` |
+
+*(Use the `POSTGRES_PASSWORD` from your `.env` file if customized).*
+
 ## 7. Initialize MinIO Storage
 
 Open the MinIO Console:
@@ -152,6 +173,17 @@ If the application requires additional buckets, create them according to the cur
 [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html)
 
 Review the endpoints exposed by the Identity Service.
+
+### Default Platform Administrator Account
+
+The Identity Service automatically provisions a default platform administrator on startup:
+
+- **Email:** `admin@admin.com` (or the value of `ADMIN_EMAIL` in `.env`)
+- **Password:** `admin` (or the value of `ADMIN_PASSWORD` in `.env`)
+- **Role:** `PLATFORM_ADMINISTRATOR`
+- **Status:** `ACTIVE`
+
+You can use these credentials to log in via `POST /api/v1/auth/login` to obtain an administrator JWT.
 
 ---
 

@@ -51,5 +51,5 @@ spring:
 
 identity:
   jwt:
-    secret: ${IDENTITY_JWT_SECRET}
-    issuer: ${IDENTITY_JWT_ISSUER:smartrecruit-identity}
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:smartrecruit-identity}

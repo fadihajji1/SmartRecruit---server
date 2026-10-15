@@ -3,9 +3,9 @@ spring:
     name: identity-service
 
   datasource:
-    url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5433/smartrecruit_identity}
+    url: ${IDENTITY_DB_URL:jdbc:postgresql://localhost:5433/identity_db}
     username: ${IDENTITY_DB_USERNAME:smartrecruit}
-    password: ${IDENTITY_DB_PASSWORD:${POSTGRES_PASSWORD:}}
+    password: ${POSTGRES_PASSWORD:postgres}
 
   jpa:
     hibernate:
@@ -30,7 +30,8 @@ identity:
     expiration: PT1H
 
   admin:
-    password: ${IDENTITY_ADMIN_PASSWORD:}
+    email: ${ADMIN_EMAIL:admin@admin.com}
+    password: ${ADMIN_PASSWORD:admin}
 
   storage:
     minio:

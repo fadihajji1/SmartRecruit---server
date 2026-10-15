@@ -1017,7 +1017,7 @@ Docker Compose infrastructure
 
 ### API gateway
 
-The `api-gateway` Spring Cloud Gateway application is the public API entry point. It preserves request paths and routes by `/api/v1` path families to the corresponding backend. Identity registration and login paths are public; other paths require a valid JWT signed with the same `IDENTITY_JWT_SECRET` and issuer as Identity Service. The bearer token is forwarded to the backend, which remains responsible for its own authorization.
+The `api-gateway` Spring Cloud Gateway application is the public API entry point. It preserves request paths and routes by `/api/v1` path families to the corresponding backend. Identity registration and login paths are public; other paths require a valid JWT signed with the same `JWT_SECRET` and issuer as Identity Service. The bearer token is forwarded to the backend, which remains responsible for its own authorization.
 
 | Path family                                                           | Kubernetes Service     |
 | --------------------------------------------------------------------- | ---------------------- |

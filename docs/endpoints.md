@@ -44,7 +44,7 @@ http://localhost:<service-port>/swagger-ui/index.html
 http://localhost:<service-port>/v3/api-docs
 ```
 
-Swagger UI and the OpenAPI JSON are public so the UI can load its specification. Use **Authorize** in Swagger UI to provide a JWT for protected operations. All services validate Identity Service tokens using the same `IDENTITY_JWT_SECRET` and `identity.jwt.issuer` configuration. Set a strong secret of at least 32 UTF-8 bytes in each service's environment; never commit it.
+Swagger UI and the OpenAPI JSON are public so the UI can load its specification. Use **Authorize** in Swagger UI to provide a JWT for protected operations. All services validate Identity Service tokens using the same `JWT_SECRET` and `identity.jwt.issuer` configuration. Set a strong secret of at least 32 UTF-8 bytes in each service's environment; never commit it.
 
 ## 3. Identity Service
 

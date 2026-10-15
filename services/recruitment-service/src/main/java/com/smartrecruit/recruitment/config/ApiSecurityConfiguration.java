@@ -41,7 +41,7 @@ public class ApiSecurityConfiguration {
 	JwtDecoder jwtDecoder(@Value("${identity.jwt.secret}") String secret,
 			@Value("${identity.jwt.issuer:smartrecruit-identity}") String issuer) {
 		if (secret.getBytes(StandardCharsets.UTF_8).length < 32) {
-			throw new IllegalArgumentException("IDENTITY_JWT_SECRET must contain at least 32 UTF-8 bytes");
+			throw new IllegalArgumentException("JWT_SECRET must contain at least 32 UTF-8 bytes");
 		}
 		NimbusJwtDecoder decoder = NimbusJwtDecoder
 				.withSecretKey(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"))

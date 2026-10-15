@@ -56,22 +56,29 @@ public class AuthController {
 				Resulting role: CANDIDATE
 				Initial account state: ACTIVE
 			""", 
-			requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(required = 	
-				true,
-				content = @Content(mediaType = "application/json", 
-				schema = @Schema(implementation = CandidateRegistrationRequest.class), examples = @ExampleObject(name = "Candidate Registration Example", 
-				value = """
-			{
-				"full name": "Fadi Hajji",
-				"email": "fadi@gmail.com",						"password": "Password123!",
-				"phoneNumber": "+21612345678",
-				"address": "12 Main Street",
-				"city": "Tunis",
-				"state": "Tunis",
-				"country": "Tunisia",
-				"postalCode": "1000",
-			}
-			"""))))
+			requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+				required = true,
+				content = @Content(
+					mediaType = "application/json", 
+					schema = @Schema(implementation = CandidateRegistrationRequest.class), 
+					examples = @ExampleObject(
+						name = "Candidate Registration Example", 
+						value = """
+							{
+							  "email": "fadi@gmail.com",
+							  "password": "Password123!",
+							  "fullName": "Fadi Hajji",
+							  "phone": "+21612345678",
+							  "address": "12 Main Street",
+							  "city": "Tunis",
+							  "state": "Tunis",
+							  "country": "Tunisia",
+							  "postalCode": "1000"
+							}
+							"""
+					)
+				)
+			))
 	@ApiResponses({
 			@ApiResponse(responseCode = "201", description = "Candidate account created", content = @Content(schema = @Schema(implementation = UserResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Invalid registration details", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class))),
@@ -92,27 +99,7 @@ public class AuthController {
 				Resulting role: RECRUITER
 				Initial account state: PENDING
 				Approval: Required from a platform administrator to review the employment proof and activate the account
-
-			""", 
-			requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(required = 	
-				true,
-				content = @Content(mediaType = "application/json", 
-				schema = @Schema(implementation = RecruiterRegistrationRequest.class), examples = @ExampleObject(name = "Recruiter Registration Example", 
-				value = """
-			{
-				"full name": "Fadi Hajji",
-				"email": "fadi@gmail.com",						"password": "Password123!",
-				"phoneNumber": "+21612345678",
-				"address": "12 Main Street",
-				"city": "Tunis",
-				"state": "Tunis",
-				"country": "Tunisia",
-				"postalCode": "1000",
-				"documentType": "employment_contract",
-                "documentFile": "<binary file>"
-			}
-			"""))))
-
+			""")
 	@ApiResponses({
 			@ApiResponse(responseCode = "201", description = "Pending recruiter account created", content = @Content(schema = @Schema(implementation = UserResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Invalid registration details or employment proof", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class))),
@@ -122,22 +109,33 @@ public class AuthController {
 	public UserResponse registerRecruiter(
 			@Parameter(
 				description = "Recruiter registration details as JSON", 
-				required = 
-					true, 
-					content = @Content(
-						mediaType = MediaType.APPLICATION_JSON_VALUE, 
-						schema = @Schema(
-							implementation = RecruiterRegistrationRequest.class))) @Valid @RequestPart("registration") RecruiterRegistrationRequest request,
+				required = true, 
+				content = @Content(
+					mediaType = MediaType.APPLICATION_JSON_VALUE, 
+					schema = @Schema(implementation = RecruiterRegistrationRequest.class),
+					examples = @ExampleObject(
+						name = "Recruiter Registration Example",
+						value = """
+							{
+							  "email": "recruiter@example.com",
+							  "password": "Password123!",
+							  "fullName": "Fadi Hajji",
+							  "phone": "+21612345678",
+							  "address": "12 Main Street",
+							  "city": "Tunis",
+							  "state": "Tunis",
+							  "country": "Tunisia",
+							  "postalCode": "1000"
+							}
+							"""
+					))) @Valid @RequestPart("registration") RecruiterRegistrationRequest request,
 			@Parameter(
 				description = "Employment proof file (PDF, JPEG, or PNG; up to 10 MB)", 
-				required = 
-					true, 
-					content = @Content(
-						mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
-						schema = @Schema(
-							type = "string", 
-							format = "binary"))) 
-							@RequestPart("employmentProof") MultipartFile employmentProof) {
+				required = true, 
+				content = @Content(
+					mediaType = MediaType.APPLICATION_OCTET_STREAM_VALUE,
+					schema = @Schema(type = "string", format = "binary"))) 
+			@RequestPart("employmentProof") MultipartFile employmentProof) {
 		return identityService.registerRecruiter(request, employmentProof);
 	}
 
@@ -146,20 +144,22 @@ public class AuthController {
 	@Operation(
 		summary = "Log in", 
 		description = "Authenticates an active account and returns a signed JWT access token.",
-		requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(required = 	
-			true,
-			content = @Content(mediaType = "application/json", 
-			schema = @Schema(
-				implementation = LoginRequest.class), 
+		requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+			required = true,
+			content = @Content(
+				mediaType = "application/json", 
+				schema = @Schema(implementation = LoginRequest.class), 
 				examples = @ExampleObject(
 					name = "Login Example", 
 					value = """
-					{
-					"email": "recruiter@example.com",
-					"password": "Password123!"
-					}
-					"""))))
-
+						{
+						  "email": "recruiter@example.com",
+						  "password": "Password123!"
+						}
+						"""
+				)
+			)
+		))
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Login successful", content = @Content(schema = @Schema(implementation = TokenResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Invalid request", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class))),
@@ -174,27 +174,7 @@ public class AuthController {
 	@SecurityRequirement(name = "bearerAuth")
 	@Operation(
 		summary = "Get current user profile",
-		description = "Returns the profile belonging to the authenticated account.",
-		requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(required = 	
-			true,
-			content = @Content(mediaType = "application/json", 
-			schema = @Schema(
-				implementation = RecruiterRegistrationRequest.class),
-				examples = @ExampleObject(
-					name = "Recruiter profile Example", 
-					value = """
-					{
-						"full name": "Fadi Hajji",
-						"email": "fadi.hajji@example.com",
-						"password": "Password123!",
-						"phoneNumber": "+21612345678",
-						"address": "12 Main Street",
-						"city": "Tunis",
-						"state": "Tunis",
-						"country": "Tunisia",
-						"postalCode": "1000"
-					}
-					"""))))
+		description = "Returns the profile belonging to the authenticated account.")
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Profile returned", content = @Content(schema = @Schema(implementation = UserResponse.class))),
 			@ApiResponse(responseCode = "401", description = "Missing or invalid bearer token", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class)))
@@ -209,26 +189,27 @@ public class AuthController {
 	@Operation(
 		summary = "Update current user profile", 
 		description = "Updates permitted profile fields for the authenticated account.",
-		requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(required = 	
-				true,
-				content = @Content(mediaType = "application/json", 
-				schema = @Schema(
-					implementation = RecruiterRegistrationRequest.class),
-					examples = @ExampleObject(
-						name = "Recruiter profile update Example", 
-						value = """
+		requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+			required = true,
+			content = @Content(
+				mediaType = "application/json", 
+				schema = @Schema(implementation = UpdateProfileRequest.class),
+				examples = @ExampleObject(
+					name = "Profile Update Example", 
+					value = """
 						{
-							"full name": "Fadi Hajji",
-							"old_password": "Password123!",
-							"new_password": "NewPassword123!",
-							"phoneNumber": "+21612345678",
-							"address": "12 Main Street",
-							"city": "Tunis",
-							"state": "Tunis",
-							"country": "Tunisia",
-							"postalCode": "1000"
+						  "fullName": "Fadi Hajji",
+						  "phone": "+21612345678",
+						  "address": "12 Main Street",
+						  "city": "Tunis",
+						  "state": "Tunis",
+						  "country": "Tunisia",
+						  "postalCode": "1000"
 						}
-						"""))))
+						"""
+				)
+			)
+		))
 	@ApiResponses({
 			@ApiResponse(responseCode = "200", description = "Profile updated", content = @Content(schema = @Schema(implementation = UserResponse.class))),
 			@ApiResponse(responseCode = "400", description = "Invalid profile details", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class))),

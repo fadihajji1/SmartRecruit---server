@@ -15,9 +15,9 @@ Recommended local infrastructure:
 - Kafka UI or equivalent development tooling.
 - MinIO for S3-compatible CV/document storage.
 
-The Identity Service requires `POSTGRES_PASSWORD`, `IDENTITY_JWT_SECRET` (at least 32 characters), `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD` in its environment. Configure `IDENTITY_DB_URL` when the service cannot use the local Compose default.
+The Identity Service requires `POSTGRES_PASSWORD`, `JWT_SECRET` (at least 32 characters), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD` in its environment. Configure `IDENTITY_DB_URL` when the service cannot use the local Compose default.
 
-All services that accept Identity Service JWTs must be configured with the same `IDENTITY_JWT_SECRET` and issuer (`smartrecruit-identity`). Swagger UI and `/v3/api-docs` are publicly accessible for development and documentation loading; protected API operations continue to require a valid JWT.
+All services that accept Identity Service JWTs must be configured with the same `JWT_SECRET` and issuer (`smartrecruit-identity` or `JWT_ISSUER`). Swagger UI and `/v3/api-docs` are publicly accessible for development and documentation loading; protected API operations continue to require a valid JWT.
 
 For team consistency, Dockerfiles and Compose configuration are version-controlled. Container images can be published to a shared registry for integration testing.
 

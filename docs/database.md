@@ -321,3 +321,26 @@ Service DB transaction
 ```
 
 Consumers must be idempotent because events may be delivered more than once.
+
+## 14. pgAdmin development tool connections
+
+When using the local pgAdmin container (`http://localhost:5050`) to inspect databases, use Docker's internal container networking rather than host ports.
+
+### Connection parameters
+
+- **Default pgAdmin User:** `admin@admin.com`
+- **Default pgAdmin Password:** `admin` (or `${PGADMIN_DEFAULT_PASSWORD}`)
+- **PostgreSQL User:** `smartrecruit`
+- **PostgreSQL Password:** `postgres` (or `${POSTGRES_PASSWORD}`)
+
+### Server registration details
+
+| Service | Registered Name | Host name/address | Port | Maintenance Database | Username |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Identity** | `Identity DB` | `identity-db` | `5432` | `identity_db` | `smartrecruit` |
+| **Recruitment** | `Recruitment DB` | `recruitment-db` | `5432` | `recruitment_db` | `smartrecruit` |
+| **Candidate / AI** | `Candidate DB` | `candidate-db` | `5432` | `candidate_db` | `smartrecruit` |
+| **Subscription** | `Subscription DB` | `subscription-db` | `5432` | `subscription_db` | `smartrecruit` |
+| **Interview** | `Interview DB` | `interview-db` | `5432` | `interview_db` | `smartrecruit` |
+| **Notification** | `Notification DB` | `notification-db` | `5432` | `notification_db` | `smartrecruit` |
+| **Analytics** | `Analytics DB` | `analytics-db` | `5432` | `analytics_db` | `smartrecruit` |
