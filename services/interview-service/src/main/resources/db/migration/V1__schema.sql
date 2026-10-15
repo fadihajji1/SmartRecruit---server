@@ -1,0 +1,1 @@
+CREATE TABLE interviews(id UUID PRIMARY KEY,application_id UUID NOT NULL,candidate_id UUID NOT NULL,recruiter_id UUID NOT NULL,job_id UUID NOT NULL,scheduled_at TIMESTAMPTZ NOT NULL,external_meeting_url TEXT NOT NULL,status VARCHAR(30) NOT NULL);

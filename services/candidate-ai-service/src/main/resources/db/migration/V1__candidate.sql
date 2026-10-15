@@ -1,0 +1,1 @@
+CREATE TABLE candidate_cvs(id UUID PRIMARY KEY,candidate_id UUID NOT NULL,original_filename VARCHAR(255) NOT NULL,object_key VARCHAR(500) NOT NULL UNIQUE,content_type VARCHAR(150),size_bytes BIGINT NOT NULL,created_at TIMESTAMPTZ NOT NULL,deleted_at TIMESTAMPTZ);

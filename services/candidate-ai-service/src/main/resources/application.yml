@@ -1,0 +1,24 @@
+server:
+  port: 8091
+spring:
+  application:
+    name: candidate-ai-service
+  datasource:
+    url: ${CANDIDATE_AI_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_candidate}
+    username: ${POSTGRES_USER:smartrecruit}
+    password: ${POSTGRES_PASSWORD:smartrecruit}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+identity:
+  jwt:
+    secret: ${IDENTITY_JWT_SECRET:01234567890123456789012345678901}
+    issuer: ${IDENTITY_JWT_ISSUER:smartrecruit-identity}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

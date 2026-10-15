@@ -1,0 +1,1011 @@
+﻿===== FILE: services\analytics-service\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\analytics-service\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>analytics-service</artifactId><dependencies>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency><dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency><dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.8.6</version></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency></dependencies></project>
+
+===== FILE: services\analytics-service\src\main\java\com\smartrecruit\analytics\AnalyticsServiceApplication.java =====
+package com.smartrecruit.analytics; import org.springframework.boot.*; import org.springframework.boot.autoconfigure.*; @SpringBootApplication public class AnalyticsServiceApplication{public static void main(String[]a){SpringApplication.run(AnalyticsServiceApplication.class,a);}}
+
+===== FILE: services\analytics-service\src\main\resources\application.yml =====
+server: {port: 8095}
+spring:
+ application.name: analytics-service
+ datasource: {url: "${ANALYTICS_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_analytics}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+ jpa.hibernate.ddl-auto: validate
+ flyway.enabled: true
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\analytics-service\src\main\resources\db\migration\V1__foundation.sql =====
+CREATE TABLE service_metadata (id UUID PRIMARY KEY, service_name VARCHAR(100) NOT NULL, created_at TIMESTAMPTZ NOT NULL);
+
+
+===== FILE: services\api-gateway\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\api-gateway\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>api-gateway</artifactId><dependencies><dependency><groupId>org.springframework.cloud</groupId><artifactId>spring-cloud-starter-gateway</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency></dependencies></project>
+
+
+===== FILE: services\api-gateway\src\main\java\com\smartrecruit\gateway\ApiGatewayApplication.java =====
+package com.smartrecruit.gateway;
+import org.springframework.boot.SpringApplication; import org.springframework.boot.autoconfigure.SpringBootApplication;
+@SpringBootApplication public class ApiGatewayApplication { public static void main(String[] a){SpringApplication.run(ApiGatewayApplication.class,a);} }
+
+
+===== FILE: services\api-gateway\src\main\java\com\smartrecruit\gateway\SecurityConfig.java =====
+package com.smartrecruit.gateway;
+import javax.crypto.spec.SecretKeySpec; import java.nio.charset.StandardCharsets;
+import org.springframework.beans.factory.annotation.Value; import org.springframework.context.annotation.*; import org.springframework.security.config.web.server.ServerHttpSecurity; import org.springframework.security.oauth2.jwt.*; import org.springframework.security.web.server.SecurityWebFilterChain;
+@Configuration public class SecurityConfig {
+ @Bean ReactiveJwtDecoder jwtDecoder(@Value("${identity.jwt.secret}") String secret,@Value("${identity.jwt.issuer}") String issuer){var d=NimbusReactiveJwtDecoder.withSecretKey(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8),"HmacSHA256")).macAlgorithm(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256).build(); d.setJwtValidator(JwtValidators.createDefaultWithIssuer(issuer)); return d;}
+ @Bean SecurityWebFilterChain security(ServerHttpSecurity h){return h.csrf(ServerHttpSecurity.CsrfSpec::disable).authorizeExchange(a->a.pathMatchers("/api/v1/auth/**","/api/v1/jobs/**","/actuator/health").permitAll().anyExchange().authenticated()).oauth2ResourceServer(o->o.jwt(j->{})).build();}
+}
+
+
+===== FILE: services\api-gateway\src\main\resources\application.yml =====
+server: {port: 8080}
+identity.jwt:
+  secret: ${IDENTITY_JWT_SECRET}
+  issuer: ${IDENTITY_JWT_ISSUER:smartrecruit-identity}
+spring:
+  application.name: api-gateway
+  cloud.gateway:
+    httpclient: {connect-timeout: 2000, response-timeout: 5s}
+    routes:
+      - {id: identity, uri: "${IDENTITY_URL:http://localhost:8082}", predicates: ["Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/recruiters/**,/api/v1/admin/users/**,/api/v1/admin/recruiters/**"]}
+      - {id: recruitment, uri: "${RECRUITMENT_URL:http://localhost:8090}", predicates: ["Path=/api/v1/jobs/**,/api/v1/applications/**,/api/v1/businesses/**,/api/v1/recruiter/**,/api/v1/candidate/applications/**"]}
+      - {id: candidate-ai, uri: "${CANDIDATE_URL:http://localhost:8091}", predicates: ["Path=/api/v1/candidate/cvs/**,/api/v1/candidate/recommendations/**,/api/v1/ai/**"]}
+      - {id: subscription, uri: "${SUBSCRIPTION_URL:http://localhost:8092}", predicates: ["Path=/api/v1/subscriptions/**,/api/v1/plans/**,/api/v1/admin/subscription/**,/api/v1/candidate/subscription/**,/api/v1/recruiter/subscription/**"]}
+      - {id: interview, uri: "${INTERVIEW_URL:http://localhost:8093}", predicates: ["Path=/api/v1/interviews/**,/api/v1/recruiter/interviews/**,/api/v1/candidate/interviews/**"]}
+      - {id: notification, uri: "${NOTIFICATION_URL:http://localhost:8094}", predicates: ["Path=/api/v1/notifications/**"]}
+      - {id: analytics, uri: "${ANALYTICS_URL:http://localhost:8095}", predicates: ["Path=/api/v1/recruiter/analytics/**"]}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\candidate-ai-service\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\candidate-ai-service\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>candidate-ai-service</artifactId><dependencies>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency><dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency><dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.8.6</version></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency><dependency><groupId>io.minio</groupId><artifactId>minio</artifactId><version>8.5.17</version></dependency></dependencies></project>
+
+===== FILE: services\candidate-ai-service\src\main\java\com\smartrecruit\candidateai\api\ApiExceptionHandler.java =====
+package com.smartrecruit.candidateai.api;import java.time.*;import java.util.*;import org.springframework.http.*;import org.springframework.security.access.AccessDeniedException;import org.springframework.web.bind.MethodArgumentNotValidException;import org.springframework.web.bind.annotation.*;@RestControllerAdvice public class ApiExceptionHandler{record ErrorBody(Instant timestamp,int status,String message){}@ExceptionHandler({IllegalArgumentException.class,IllegalStateException.class,MethodArgumentNotValidException.class})ResponseEntity<ErrorBody> bad(Exception e){return ResponseEntity.badRequest().body(new ErrorBody(Instant.now(),400,e.getMessage()));}@ExceptionHandler({SecurityException.class,AccessDeniedException.class})ResponseEntity<ErrorBody> forbidden(Exception e){return ResponseEntity.status(403).body(new ErrorBody(Instant.now(),403,"Access denied"));}@ExceptionHandler(NoSuchElementException.class)ResponseEntity<ErrorBody> missing(Exception e){return ResponseEntity.status(404).body(new ErrorBody(Instant.now(),404,"Resource not found"));}}
+
+===== FILE: services\candidate-ai-service\src\main\java\com\smartrecruit\candidateai\api\CvController.java =====
+package com.smartrecruit.candidateai.api;import com.smartrecruit.candidateai.domain.CandidateCv;import com.smartrecruit.candidateai.service.CvService;import java.util.*;import org.springframework.http.*;import org.springframework.security.access.prepost.PreAuthorize;import org.springframework.security.core.annotation.AuthenticationPrincipal;import org.springframework.security.oauth2.jwt.Jwt;import org.springframework.web.bind.annotation.*;import org.springframework.web.multipart.MultipartFile;@RestController @RequestMapping("/api/v1/candidate/cvs") @PreAuthorize("hasRole('CANDIDATE')") public class CvController{final CvService s;public CvController(CvService s){this.s=s;}UUID id(Jwt j){return UUID.fromString(j.getClaimAsString("user_id"));}@GetMapping public List<CandidateCv> list(@AuthenticationPrincipal Jwt j){return s.list(id(j));}@PostMapping(consumes=MediaType.MULTIPART_FORM_DATA_VALUE)@ResponseStatus(HttpStatus.CREATED)public CandidateCv upload(@RequestPart MultipartFile file,@AuthenticationPrincipal Jwt j){return s.upload(id(j),file);}@GetMapping("/{cvId}")public CandidateCv one(@PathVariable UUID cvId,@AuthenticationPrincipal Jwt j){return s.list(id(j)).stream().filter(x->x.id.equals(cvId)).findFirst().orElseThrow();}@DeleteMapping("/{cvId}")@ResponseStatus(HttpStatus.NO_CONTENT)public void delete(@PathVariable UUID cvId,@AuthenticationPrincipal Jwt j){s.delete(cvId,id(j));}}
+
+===== FILE: services\candidate-ai-service\src\main\java\com\smartrecruit\candidateai\CandidateAiServiceApplication.java =====
+package com.smartrecruit.candidateai; import org.springframework.boot.*; import org.springframework.boot.autoconfigure.*; @SpringBootApplication public class CandidateAiServiceApplication{public static void main(String[]a){SpringApplication.run(CandidateAiServiceApplication.class,a);}}
+
+===== FILE: services\candidate-ai-service\src\main\java\com\smartrecruit\candidateai\config\SecurityConfig.java =====
+package com.smartrecruit.candidateai.config;import io.minio.MinioClient;import javax.crypto.spec.SecretKeySpec;import java.nio.charset.StandardCharsets;import org.springframework.beans.factory.annotation.Value;import org.springframework.context.annotation.*;import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;import org.springframework.security.config.annotation.web.builders.HttpSecurity;import org.springframework.security.core.authority.SimpleGrantedAuthority;import org.springframework.security.oauth2.jwt.*;import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;import org.springframework.security.web.SecurityFilterChain;@Configuration @EnableMethodSecurity public class SecurityConfig{@Bean JwtDecoder d(@Value("${identity.jwt.secret}")String s,@Value("${identity.jwt.issuer}")String i){var d=NimbusJwtDecoder.withSecretKey(new SecretKeySpec(s.getBytes(StandardCharsets.UTF_8),"HmacSHA256")).build();d.setJwtValidator(JwtValidators.createDefaultWithIssuer(i));return d;}@Bean SecurityFilterChain c(HttpSecurity h)throws Exception{var c=new JwtAuthenticationConverter();c.setJwtGrantedAuthoritiesConverter(j->j.getClaimAsStringList("roles").stream().map(x->new SimpleGrantedAuthority("ROLE_"+x)).toList());return h.csrf(x->x.disable()).authorizeHttpRequests(a->a.requestMatchers("/swagger-ui/**","/v3/api-docs/**","/actuator/health").permitAll().anyRequest().authenticated()).oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(c))).build();}@Bean MinioClient m(@Value("${minio.url}")String u,@Value("${minio.access-key}")String a,@Value("${minio.secret-key}")String s){return MinioClient.builder().endpoint(u).credentials(a,s).build();}}
+
+===== FILE: services\candidate-ai-service\src\main\java\com\smartrecruit\candidateai\domain\CandidateCv.java =====
+package com.smartrecruit.candidateai.domain; import jakarta.persistence.*;import java.time.*;import java.util.*; @Entity @Table(name="candidate_cvs") public class CandidateCv{@Id public UUID id;public UUID candidateId;public String originalFilename,objectKey,contentType;public long sizeBytes;public Instant createdAt,deletedAt;@PrePersist void p(){id=id==null?UUID.randomUUID():id;createdAt=Instant.now();}}
+
+===== FILE: services\candidate-ai-service\src\main\java\com\smartrecruit\candidateai\repo\CandidateCvRepository.java =====
+package com.smartrecruit.candidateai.repo;import com.smartrecruit.candidateai.domain.CandidateCv;import java.util.*;import org.springframework.data.jpa.repository.JpaRepository;public interface CandidateCvRepository extends JpaRepository<CandidateCv,UUID>{List<CandidateCv> findByCandidateIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID id);Optional<CandidateCv> findByIdAndCandidateIdAndDeletedAtIsNull(UUID id,UUID candidateId);}
+
+===== FILE: services\candidate-ai-service\src\main\java\com\smartrecruit\candidateai\service\CvService.java =====
+package com.smartrecruit.candidateai.service;import com.smartrecruit.candidateai.domain.CandidateCv;import com.smartrecruit.candidateai.repo.CandidateCvRepository;import io.minio.*;import java.time.*;import java.util.*;import org.springframework.beans.factory.annotation.Value;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;import org.springframework.web.multipart.MultipartFile;@Service public class CvService{final CandidateCvRepository repo;final MinioClient minio;@Value("${minio.bucket}")String bucket;public CvService(CandidateCvRepository r,MinioClient m){repo=r;minio=m;}public List<CandidateCv> list(UUID u){return repo.findByCandidateIdAndDeletedAtIsNullOrderByCreatedAtDesc(u);}@Transactional public CandidateCv upload(UUID u,MultipartFile f){if(f==null||f.isEmpty()||f.getSize()>10*1024*1024)throw new IllegalArgumentException("CV required, maximum 10 MB");if(!List.of("application/pdf","application/vnd.openxmlformats-officedocument.wordprocessingml.document").contains(f.getContentType()))throw new IllegalArgumentException("PDF or DOCX only");String key="cvs/"+u+"/"+UUID.randomUUID();try{minio.putObject(PutObjectArgs.builder().bucket(bucket).object(key).stream(f.getInputStream(),f.getSize(),-1).contentType(f.getContentType()).build());}catch(Exception e){throw new IllegalStateException("CV storage failed",e);}var c=new CandidateCv();c.candidateId=u;c.originalFilename=f.getOriginalFilename();c.objectKey=key;c.contentType=f.getContentType();c.sizeBytes=f.getSize();return repo.save(c);}@Transactional public void delete(UUID id,UUID u){var c=repo.findByIdAndCandidateIdAndDeletedAtIsNull(id,u).orElseThrow();try{minio.removeObject(RemoveObjectArgs.builder().bucket(bucket).object(c.objectKey).build());}catch(Exception e){throw new IllegalStateException("CV deletion failed",e);}c.deletedAt=Instant.now();}}
+
+===== FILE: services\candidate-ai-service\src\main\resources\application.yml =====
+server: {port: 8091}
+spring:
+ application.name: candidate-ai-service
+ datasource: {url: "${CANDIDATE_AI_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_candidate}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+ jpa.hibernate.ddl-auto: validate
+ flyway.enabled: true
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+minio: {url: "${MINIO_URL:http://localhost:9000}", access-key: "${MINIO_ROOT_USER:minioadmin}", secret-key: "${MINIO_ROOT_PASSWORD:minioadmin}", bucket: smartrecruit-private}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\candidate-ai-service\src\main\resources\db\migration\V1__foundation.sql =====
+CREATE TABLE candidate_cvs(id UUID PRIMARY KEY,candidate_id UUID NOT NULL,original_filename VARCHAR(255) NOT NULL,object_key VARCHAR(500) NOT NULL UNIQUE,content_type VARCHAR(150) NOT NULL,size_bytes BIGINT NOT NULL,created_at TIMESTAMPTZ NOT NULL,deleted_at TIMESTAMPTZ);CREATE INDEX idx_cv_owner ON candidate_cvs(candidate_id,created_at DESC);CREATE TABLE ats_scans(id UUID PRIMARY KEY,cv_id UUID NOT NULL,score NUMERIC(5,2),result_json TEXT,status VARCHAR(30),created_at TIMESTAMPTZ NOT NULL,completed_at TIMESTAMPTZ);CREATE TABLE recommendations(id UUID PRIMARY KEY,candidate_id UUID NOT NULL,cv_id UUID,job_id UUID NOT NULL,score NUMERIC(5,2),reason TEXT,created_at TIMESTAMPTZ NOT NULL);
+
+===== FILE: services\discovery-server\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\discovery-server\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>discovery-server</artifactId><dependencies><dependency><groupId>org.springframework.cloud</groupId><artifactId>spring-cloud-starter-netflix-eureka-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency></dependencies></project>
+
+===== FILE: services\discovery-server\src\main\java\com\smartrecruit\discovery\DiscoveryServerApplication.java =====
+package com.smartrecruit.discovery; import org.springframework.boot.*;import org.springframework.boot.autoconfigure.*;import org.springframework.cloud.netflix.eureka.server.EnableEurekaServer; @SpringBootApplication @EnableEurekaServer public class DiscoveryServerApplication{public static void main(String[]a){SpringApplication.run(DiscoveryServerApplication.class,a);}}
+
+===== FILE: services\discovery-server\src\main\resources\application.yml =====
+server: {port: 8761}
+spring.application.name: discovery-server
+eureka.client: {register-with-eureka: false, fetch-registry: false}
+management.endpoints.web.exposure.include: health,info
+
+
+===== FILE: services\identity-service\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\identity-service\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>identity-service</artifactId><dependencies>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency><dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency><dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.8.6</version></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency><dependency><groupId>io.minio</groupId><artifactId>minio</artifactId><version>8.5.17</version></dependency></dependencies></project>
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\api\ApiExceptionHandler.java =====
+package com.smartrecruit.identity.api;import java.time.*;import java.util.*;import org.springframework.http.*;import org.springframework.security.access.AccessDeniedException;import org.springframework.web.bind.MethodArgumentNotValidException;import org.springframework.web.bind.annotation.*;@RestControllerAdvice public class ApiExceptionHandler{record ErrorBody(Instant timestamp,int status,String message){}@ExceptionHandler({IllegalArgumentException.class,IllegalStateException.class,MethodArgumentNotValidException.class})ResponseEntity<ErrorBody> bad(Exception e){return ResponseEntity.badRequest().body(new ErrorBody(Instant.now(),400,e.getMessage()));}@ExceptionHandler({SecurityException.class,AccessDeniedException.class})ResponseEntity<ErrorBody> forbidden(Exception e){return ResponseEntity.status(403).body(new ErrorBody(Instant.now(),403,"Access denied"));}@ExceptionHandler(NoSuchElementException.class)ResponseEntity<ErrorBody> missing(Exception e){return ResponseEntity.status(404).body(new ErrorBody(Instant.now(),404,"Resource not found"));}}
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\api\Controllers.java =====
+package com.smartrecruit.identity.api;
+import com.smartrecruit.identity.api.Dto.*; import com.smartrecruit.identity.domain.Models.Status; import com.smartrecruit.identity.service.IdentityService; import jakarta.validation.Valid; import java.util.*; import org.springframework.http.*; import org.springframework.security.access.prepost.PreAuthorize; import org.springframework.security.core.Authentication; import org.springframework.security.oauth2.jwt.Jwt; import org.springframework.web.bind.annotation.*; import org.springframework.web.multipart.MultipartFile;
+public final class Controllers{private Controllers(){}
+ @RestController @RequestMapping("/api/v1/auth") public static class Auth{private final IdentityService s;Auth(IdentityService s){this.s=s;}@PostMapping("/register/candidate") @ResponseStatus(HttpStatus.CREATED) UserView candidate(@Valid @RequestBody Register d){return s.registerCandidate(d);}@PostMapping(value="/register/recruiter",consumes=MediaType.MULTIPART_FORM_DATA_VALUE) @ResponseStatus(HttpStatus.CREATED) UserView recruiter(@Valid @RequestPart Register registration,@RequestPart MultipartFile employmentProof){return s.registerRecruiter(registration,employmentProof);}@PostMapping("/login") Token login(@Valid @RequestBody Login d){return s.login(d);}}
+ @RestController @RequestMapping("/api/v1/users") public static class Me{private final IdentityService s;Me(IdentityService s){this.s=s;}@GetMapping("/me") UserView me(Authentication a){return s.me(a.getName());}@PatchMapping("/me") UserView update(Authentication a,@Valid @RequestBody UpdateProfile d){return s.updateMe(a.getName(),d);}}
+ @RestController @RequestMapping("/api/v1/admin") @PreAuthorize("hasRole('PLATFORM_ADMINISTRATOR')") public static class Admin{private final IdentityService s;Admin(IdentityService s){this.s=s;}@GetMapping("/users") List<UserView> users(){return s.all();}@PatchMapping("/users/{id}/status") UserView status(@PathVariable UUID id,@RequestParam Status value){return s.status(id,value);}@PostMapping("/recruiters/{id}/approve") UserView approve(@PathVariable UUID id,@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt j){return s.approve(id,UUID.fromString(j.getClaimAsString("user_id")));}@PostMapping("/recruiters/{id}/reject") UserView reject(@PathVariable UUID id,@Valid @RequestBody Reject r,@org.springframework.security.core.annotation.AuthenticationPrincipal Jwt j){return s.reject(id,UUID.fromString(j.getClaimAsString("user_id")),r.reason());}}
+}
+
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\api\Dto.java =====
+package com.smartrecruit.identity.api; import jakarta.validation.constraints.*; import java.util.*;
+public final class Dto{private Dto(){}
+ public record Register(@Email @NotBlank String email,@Size(min=12,max=72) String password,@NotBlank String fullName,String phone,String address,String city,String country){}
+ public record Login(@Email @NotBlank String email,@NotBlank String password){}
+ public record Token(String accessToken,String tokenType,long expiresIn){}
+ public record UpdateProfile(@Size(max=150) String fullName,@Size(max=40) String phone,@Size(max=255) String address,@Size(max=100) String city,@Size(max=100) String country){}
+ public record UserView(UUID id,String email,String fullName,String phone,String address,String city,String country,String role,String status){}
+ public record Reject(@NotBlank @Size(max=500) String reason){}
+}
+
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\config\Beans.java =====
+package com.smartrecruit.identity.config; import io.minio.MinioClient; import org.springframework.beans.factory.annotation.Value; import org.springframework.context.annotation.*; @Configuration public class Beans{@Bean MinioClient minio(@Value("${minio.url}")String u,@Value("${minio.access-key}")String a,@Value("${minio.secret-key}")String s){return MinioClient.builder().endpoint(u).credentials(a,s).build();}}
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\config\SecurityConfig.java =====
+package com.smartrecruit.identity.config;
+
+import com.smartrecruit.identity.repo.Repositories.Users;
+import com.nimbusds.jose.jwk.source.ImmutableSecret;
+import com.nimbusds.jose.proc.SecurityContext;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.ProviderManager;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
+import org.springframework.security.web.SecurityFilterChain;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+
+@Configuration
+@EnableMethodSecurity
+public class SecurityConfig {
+
+    @Bean
+    BCryptPasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
+    }
+
+    @Bean
+    UserDetailsService uds(Users r) {
+        return email -> {
+            var u = r.findByEmailIgnoreCase(email)
+                    .orElseThrow(() -> new UsernameNotFoundException("Invalid credentials"));
+            return User.withUsername(u.email)
+                    .password(u.passwordHash)
+                    .roles(u.role.name())
+                    .disabled(u.status != com.smartrecruit.identity.domain.Models.Status.ACTIVE)
+                    .build();
+        };
+    }
+
+    @Bean
+    AuthenticationManager manager(UserDetailsService u, BCryptPasswordEncoder p) {
+        var d = new DaoAuthenticationProvider();
+        d.setUserDetailsService(u);
+        d.setPasswordEncoder(p);
+        return new ProviderManager(d);
+    }
+
+    @Bean
+    JwtEncoder encoder(@Value("${identity.jwt.secret}") String s) {
+        var secretKey = new SecretKeySpec(s.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        return new NimbusJwtEncoder(new ImmutableSecret<>(secretKey));
+    }
+
+    @Bean
+    JwtDecoder decoder(@Value("${identity.jwt.secret}") String s, @Value("${identity.jwt.issuer}") String i) {
+        var secretKey = new SecretKeySpec(s.getBytes(StandardCharsets.UTF_8), "HmacSHA256");
+        var d = NimbusJwtDecoder.withSecretKey(secretKey)
+                .macAlgorithm(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256)
+                .build();
+        d.setJwtValidator(org.springframework.security.oauth2.jwt.JwtValidators.createDefaultWithIssuer(i));
+        return d;
+    }
+
+    @Bean
+    SecurityFilterChain chain(HttpSecurity h) throws Exception {
+        var c = new JwtAuthenticationConverter();
+        c.setJwtGrantedAuthoritiesConverter(j -> {
+            var converter = new JwtGrantedAuthoritiesConverter();
+            converter.setAuthorityPrefix("ROLE_");
+            return converter.convert(j);
+        });
+        return h.csrf(x -> x.disable())
+                .sessionManagement(x -> x.sessionCreationPolicy(org.springframework.security.config.http.SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(a -> a.requestMatchers("/api/v1/auth/**", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll().anyRequest().authenticated())
+                .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(c)))
+                .build();
+    }
+}
+
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\domain\Models.java =====
+package com.smartrecruit.identity.domain;
+import jakarta.persistence.*; import java.time.*; import java.util.*;
+public final class Models {private Models(){}
+ public enum Role{CANDIDATE,RECRUITER,PLATFORM_ADMINISTRATOR} public enum Status{ACTIVE,PENDING,REJECTED,INACTIVE}
+ @Entity @Table(name="users") public static class User{ @Id public UUID id; @Column(unique=true,nullable=false) public String email; @Column(name="password_hash",nullable=false) public String passwordHash; @Column(name="full_name",nullable=false) public String fullName; public String phone,address,city,country; @Enumerated(EnumType.STRING) public Role role; @Enumerated(EnumType.STRING) public Status status; public Instant createdAt,updatedAt; @PrePersist void create(){id=id==null?UUID.randomUUID():id;createdAt=updatedAt=Instant.now();} @PreUpdate void update(){updatedAt=Instant.now();}}
+ @Entity @Table(name="recruiter_profiles") public static class RecruiterProfile{@Id public UUID userId; @Column(nullable=false) public String employmentProofObjectKey; public String approvalStatus,rejectionReason; public UUID approvedBy; public Instant approvedAt;}
+}
+
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\IdentityApplication.java =====
+package com.smartrecruit.identity; import org.springframework.boot.*; import org.springframework.boot.autoconfigure.*; @SpringBootApplication public class IdentityApplication{public static void main(String[]a){SpringApplication.run(IdentityApplication.class,a);}}
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\repo\Repositories.java =====
+package com.smartrecruit.identity.repo; import com.smartrecruit.identity.domain.Models.*; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository;
+public final class Repositories{private Repositories(){} public interface Users extends JpaRepository<User,UUID>{Optional<User> findByEmailIgnoreCase(String email); boolean existsByEmailIgnoreCase(String email);} public interface Recruiters extends JpaRepository<RecruiterProfile,UUID>{}}
+
+
+===== FILE: services\identity-service\src\main\java\com\smartrecruit\identity\service\IdentityService.java =====
+package com.smartrecruit.identity.service;
+import com.smartrecruit.identity.api.Dto.*; import com.smartrecruit.identity.domain.Models.*; import com.smartrecruit.identity.repo.Repositories.*; import io.minio.*; import java.io.*; import java.time.*; import java.util.*; import org.springframework.beans.factory.annotation.*; import org.springframework.http.*; import org.springframework.security.authentication.*; import org.springframework.security.crypto.password.PasswordEncoder; import org.springframework.security.oauth2.jose.jws.MacAlgorithm; import org.springframework.security.oauth2.jwt.*; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional; import org.springframework.web.multipart.MultipartFile;
+@Service public class IdentityService{private final Users users;private final Recruiters recruiters;private final PasswordEncoder passwords;private final AuthenticationManager auth;private final JwtEncoder jwt;private final MinioClient minio;@Value("${identity.jwt.issuer}")String issuer;@Value("${minio.bucket}")String bucket;
+ public IdentityService(Users u,Recruiters r,PasswordEncoder p,AuthenticationManager a,JwtEncoder j,MinioClient m){users=u;recruiters=r;passwords=p;auth=a;jwt=j;minio=m;}
+ @Transactional public UserView registerCandidate(Register d){return create(d,Role.CANDIDATE,Status.ACTIVE);}
+ @Transactional public UserView registerRecruiter(Register d,MultipartFile f){validate(f);String key="employment-proofs/"+UUID.randomUUID()+ext(f.getOriginalFilename());try{minio.putObject(PutObjectArgs.builder().bucket(bucket).object(key).stream(f.getInputStream(),f.getSize(),-1).contentType(f.getContentType()).build());var v=create(d,Role.RECRUITER,Status.PENDING);var p=new RecruiterProfile();p.userId=v.id();p.employmentProofObjectKey=key;p.approvalStatus="PENDING";recruiters.save(p);return v;}catch(Exception e){throw new IllegalStateException("Employment proof storage failed",e);}}
+ private UserView create(Register d,Role role,Status status){if(users.existsByEmailIgnoreCase(d.email()))throw new IllegalArgumentException("Email already registered");var u=new User();u.email=d.email().trim().toLowerCase();u.passwordHash=passwords.encode(d.password());u.fullName=d.fullName();u.phone=d.phone();u.address=d.address();u.city=d.city();u.country=d.country();u.role=role;u.status=status;return view(users.save(u));}
+ public Token login(Login d){auth.authenticate(new UsernamePasswordAuthenticationToken(d.email(),d.password()));var u=users.findByEmailIgnoreCase(d.email()).orElseThrow();var now=Instant.now();var claims=JwtClaimsSet.builder().issuer(issuer).subject(u.email).issuedAt(now).expiresAt(now.plusSeconds(3600)).claim("user_id",u.id.toString()).claim("roles",List.of(u.role.name())).build();var token=jwt.encode(JwtEncoderParameters.from(JwsHeader.with(MacAlgorithm.HS256).build(),claims)).getTokenValue();return new Token(token,"Bearer",3600);}
+ public UserView me(String email){return view(users.findByEmailIgnoreCase(email).orElseThrow());} @Transactional public UserView updateMe(String email,UpdateProfile d){var u=users.findByEmailIgnoreCase(email).orElseThrow();if(d.fullName()!=null)u.fullName=d.fullName();if(d.phone()!=null)u.phone=d.phone();if(d.address()!=null)u.address=d.address();if(d.city()!=null)u.city=d.city();if(d.country()!=null)u.country=d.country();return view(u);}
+ public List<UserView> all(){return users.findAll().stream().map(this::view).toList();} @Transactional public UserView status(UUID id,Status s){var u=users.findById(id).orElseThrow();u.status=s;return view(u);} @Transactional public UserView approve(UUID id,UUID admin){var u=users.findById(id).orElseThrow();if(u.role!=Role.RECRUITER)throw new IllegalArgumentException("Not recruiter");u.status=Status.ACTIVE;var p=recruiters.findById(id).orElseThrow();p.approvalStatus="APPROVED";p.approvedBy=admin;p.approvedAt=Instant.now();p.rejectionReason=null;return view(u);} @Transactional public UserView reject(UUID id,UUID admin,String reason){var u=users.findById(id).orElseThrow();u.status=Status.REJECTED;var p=recruiters.findById(id).orElseThrow();p.approvalStatus="REJECTED";p.approvedBy=admin;p.rejectionReason=reason;return view(u);}
+ private UserView view(User u){return new UserView(u.id,u.email,u.fullName,u.phone,u.address,u.city,u.country,u.role.name(),u.status.name());} private void validate(MultipartFile f){if(f==null||f.isEmpty()||f.getSize()>10*1024*1024)throw new IllegalArgumentException("Proof required, max 10 MB");String t=f.getContentType();if(!List.of("application/pdf","image/jpeg","image/png").contains(t))throw new IllegalArgumentException("PDF/JPEG/PNG only");} private String ext(String n){return n!=null&&n.contains(".")?n.substring(n.lastIndexOf('.')):".bin";}
+}
+
+
+===== FILE: services\identity-service\src\main\resources\application.yml =====
+server: {port: 8082}
+spring:
+  application.name: identity-service
+  datasource: {url: "${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_identity}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+  jpa: {open-in-view: false, hibernate.ddl-auto: validate}
+  flyway.enabled: true
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+minio: {url: "${MINIO_URL:http://localhost:9000}", access-key: "${MINIO_ROOT_USER:minioadmin}", secret-key: "${MINIO_ROOT_PASSWORD:minioadmin}", bucket: smartrecruit-private}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\identity-service\src\main\resources\db\migration\V1__identity.sql =====
+CREATE TABLE users(id UUID PRIMARY KEY,email VARCHAR(320) UNIQUE NOT NULL,password_hash VARCHAR(255) NOT NULL,full_name VARCHAR(150) NOT NULL,phone VARCHAR(40),address VARCHAR(255),city VARCHAR(100),country VARCHAR(100),role VARCHAR(40) NOT NULL,status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE recruiter_profiles(user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,employment_proof_object_key VARCHAR(500) NOT NULL,approval_status VARCHAR(30) NOT NULL,rejection_reason VARCHAR(500),approved_by UUID,approved_at TIMESTAMPTZ);
+CREATE TABLE candidate_profiles(user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE admin_profiles(user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE);
+
+
+===== FILE: services\identity-service\target\classes\application.yml =====
+server: {port: 8082}
+spring:
+  application.name: identity-service
+  datasource: {url: "${IDENTITY_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_identity}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+  jpa: {open-in-view: false, hibernate.ddl-auto: validate}
+  flyway.enabled: true
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+minio: {url: "${MINIO_URL:http://localhost:9000}", access-key: "${MINIO_ROOT_USER:minioadmin}", secret-key: "${MINIO_ROOT_PASSWORD:minioadmin}", bucket: smartrecruit-private}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\ApiExceptionHandler$ErrorBody.class =====
+����   = H
+      java/lang/Record <init> ()V	  	 
+   ;com/smartrecruit/identity/api/ApiExceptionHandler$ErrorBody 	timestamp Ljava/time/Instant;	     status I	     message Ljava/lang/String;      toString Q(Lcom/smartrecruit/identity/api/ApiExceptionHandler$ErrorBody;)Ljava/lang/String;      hashCode @(Lcom/smartrecruit/identity/api/ApiExceptionHandler$ErrorBody;)I       equals R(Lcom/smartrecruit/identity/api/ApiExceptionHandler$ErrorBody;Ljava/lang/Object;)Z )(Ljava/time/Instant;ILjava/lang/String;)V Code LineNumberTable LocalVariableTable this =Lcom/smartrecruit/identity/api/ApiExceptionHandler$ErrorBody; MethodParameters ()Ljava/lang/String; ()I (Ljava/lang/Object;)Z o Ljava/lang/Object; ()Ljava/time/Instant; 
+SourceFile ApiExceptionHandler.java NestHost 2 1com/smartrecruit/identity/api/ApiExceptionHandler Record BootstrapMethods 6
+ 7 8 9 : ; java/lang/runtime/ObjectMethods 	bootstrap �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object; = timestamp;status;message    InnerClasses 	ErrorBody D %java/lang/invoke/MethodHandles$Lookup F java/lang/invoke/MethodHandles Lookup 0                         !  "   \     *� *+� *� *-� �    #        $   *     % &                     '               (  "   1     *�   �    #        $        % &     )  "   1     *�   �    #        $        % &     *  "   <     *+�   �    #        $        % &      + ,  '    +     -  "   /     *� �    #        $        % &     )  "   /     *� �    #        $        % &     (  "   /     *� �    #        $        % &    .    / 0    1 3                 4     5   < > ? @ A      1 B  C E G 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\ApiExceptionHandler.class =====
+����   = L
+      java/lang/Object <init> ()V
+  	 
+   'org/springframework/http/ResponseEntity 
+badRequest 7()Lorg/springframework/http/ResponseEntity$BodyBuilder;  ;com/smartrecruit/identity/api/ApiExceptionHandler$ErrorBody
+      java/time/Instant now ()Ljava/time/Instant;
+      java/lang/Exception 
+getMessage ()Ljava/lang/String;
+     )(Ljava/time/Instant;ILjava/lang/String;)V    ! " # 3org/springframework/http/ResponseEntity$BodyBuilder body =(Ljava/lang/Object;)Lorg/springframework/http/ResponseEntity;
+  % & ' status 8(I)Lorg/springframework/http/ResponseEntity$BodyBuilder; ) Access denied + Resource not found - 1com/smartrecruit/identity/api/ApiExceptionHandler Code LineNumberTable LocalVariableTable this 3Lcom/smartrecruit/identity/api/ApiExceptionHandler; bad @(Ljava/lang/Exception;)Lorg/springframework/http/ResponseEntity; e Ljava/lang/Exception; MethodParameters 	Signature (Ljava/lang/Exception;)Lorg/springframework/http/ResponseEntity<Lcom/smartrecruit/identity/api/ApiExceptionHandler$ErrorBody;>; RuntimeVisibleAnnotations :Lorg/springframework/web/bind/annotation/ExceptionHandler; value $Ljava/lang/IllegalArgumentException; !Ljava/lang/IllegalStateException; >Lorg/springframework/web/bind/MethodArgumentNotValidException; 	forbidden Ljava/lang/SecurityException; ;Lorg/springframework/security/access/AccessDeniedException; missing "Ljava/util/NoSuchElementException; 
+SourceFile ApiExceptionHandler.java >Lorg/springframework/web/bind/annotation/RestControllerAdvice; NestMembers InnerClasses BodyBuilder 	ErrorBody ! ,           .   /     *� �    /        0        1 2     3 4  .   N     � � Y� �+� � �  �    /        0        1 2      5 6  7    5   8    9 :     ;  <[ c =c >c ?   @ 4  .   O     �� $� Y� �(� �  �    /        0        1 2      5 6  7    5   8    9 :     ;  <[ c Ac B   C 4  .   O     �� $� Y� �*� �  �    /        0        1 2      5 6  7    5   8    9 :     ;  <[ c D  E    F :     G   H      I       J	  , K 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Controllers$Admin.class =====
+����   = m
+      java/lang/Object <init> ()V	  	 
+   /com/smartrecruit/identity/api/Controllers$Admin s 3Lcom/smartrecruit/identity/service/IdentityService;
+      1com/smartrecruit/identity/service/IdentityService all ()Ljava/util/List;
+     status n(Ljava/util/UUID;Lcom/smartrecruit/identity/domain/Models$Status;)Lcom/smartrecruit/identity/api/Dto$UserView;  user_id
+      +org/springframework/security/oauth2/jwt/Jwt getClaimAsString &(Ljava/lang/String;)Ljava/lang/String;
+   ! " # $ java/util/UUID 
+fromString $(Ljava/lang/String;)Ljava/util/UUID;
+  & ' ( approve N(Ljava/util/UUID;Ljava/util/UUID;)Lcom/smartrecruit/identity/api/Dto$UserView;
+ * + , - . (com/smartrecruit/identity/api/Dto$Reject reason ()Ljava/lang/String;
+  0 1 2 reject `(Ljava/util/UUID;Ljava/util/UUID;Ljava/lang/String;)Lcom/smartrecruit/identity/api/Dto$UserView; 6(Lcom/smartrecruit/identity/service/IdentityService;)V Code LineNumberTable LocalVariableTable this 1Lcom/smartrecruit/identity/api/Controllers$Admin; MethodParameters users 	Signature @()Ljava/util/List<Lcom/smartrecruit/identity/api/Dto$UserView;>; RuntimeVisibleAnnotations 4Lorg/springframework/web/bind/annotation/GetMapping; value /users id Ljava/util/UUID; 0Lcom/smartrecruit/identity/domain/Models$Status; 6Lorg/springframework/web/bind/annotation/PatchMapping; /users/{id}/status "RuntimeVisibleParameterAnnotations 6Lorg/springframework/web/bind/annotation/PathVariable; 6Lorg/springframework/web/bind/annotation/RequestParam; k(Ljava/util/UUID;Lorg/springframework/security/oauth2/jwt/Jwt;)Lcom/smartrecruit/identity/api/Dto$UserView; j -Lorg/springframework/security/oauth2/jwt/Jwt; 5Lorg/springframework/web/bind/annotation/PostMapping; /recruiters/{id}/approve FLorg/springframework/security/core/annotation/AuthenticationPrincipal; �(Ljava/util/UUID;Lcom/smartrecruit/identity/api/Dto$Reject;Lorg/springframework/security/oauth2/jwt/Jwt;)Lcom/smartrecruit/identity/api/Dto$UserView; r *Lcom/smartrecruit/identity/api/Dto$Reject; /recruiters/{id}/reject RuntimeVisibleTypeAnnotations Ljakarta/validation/Valid; 5Lorg/springframework/web/bind/annotation/RequestBody; 
+SourceFile Controllers.java 8Lorg/springframework/web/bind/annotation/RestController; 8Lorg/springframework/web/bind/annotation/RequestMapping; /api/v1/admin :Lorg/springframework/security/access/prepost/PreAuthorize; !hasRole('PLATFORM_ADMINISTRATOR') NestHost _ )com/smartrecruit/identity/api/Controllers InnerClasses Admin c .com/smartrecruit/identity/domain/Models$Status e 'com/smartrecruit/identity/domain/Models Status h *com/smartrecruit/identity/api/Dto$UserView j !com/smartrecruit/identity/api/Dto UserView Reject !               3  4   >     
+*� *+� �    5        6       
+ 7 8     
+    9         :   4   2     *� � �    5        6        7 8   ;    < =     >  ?[ s @      4   H     
+*� +,� �    5        6        
+ 7 8     
+ A B    
+ ? C  9   	 A   ?   =     D  ?[ s E F     G    H     ' I  4   P     *� +,� � � %�    5        6         7 8      A B     J K  9   	 A   J   =     L  ?[ s M F     G    N     1 O  4   ^     *� +-� � ,� )� /�    5        6   *     7 8      A B     P Q     J K  9    A   P   J   =     L  ?[ s R S   	   T   F     G    T   U    N    V    W =     X   Y  ?[ s Z [  ?s \ ]    ^ `   "   ^ a 	 b d f@ g i k  * i l 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Controllers$Auth.class =====
+����   = R
+      java/lang/Object <init> ()V	  	 
+   .com/smartrecruit/identity/api/Controllers$Auth s 3Lcom/smartrecruit/identity/service/IdentityService;
+      1com/smartrecruit/identity/service/IdentityService registerCandidate Z(Lcom/smartrecruit/identity/api/Dto$Register;)Lcom/smartrecruit/identity/api/Dto$UserView;
+     registerRecruiter �(Lcom/smartrecruit/identity/api/Dto$Register;Lorg/springframework/web/multipart/MultipartFile;)Lcom/smartrecruit/identity/api/Dto$UserView;
+     login T(Lcom/smartrecruit/identity/api/Dto$Login;)Lcom/smartrecruit/identity/api/Dto$Token; 6(Lcom/smartrecruit/identity/service/IdentityService;)V Code LineNumberTable LocalVariableTable this 0Lcom/smartrecruit/identity/api/Controllers$Auth; MethodParameters 	candidate d ,Lcom/smartrecruit/identity/api/Dto$Register; RuntimeVisibleAnnotations 5Lorg/springframework/web/bind/annotation/PostMapping; value /register/candidate 8Lorg/springframework/web/bind/annotation/ResponseStatus; %Lorg/springframework/http/HttpStatus; CREATED RuntimeVisibleTypeAnnotations Ljakarta/validation/Valid; "RuntimeVisibleParameterAnnotations 5Lorg/springframework/web/bind/annotation/RequestBody; 	recruiter registration employmentProof 1Lorg/springframework/web/multipart/MultipartFile; /register/recruiter consumes multipart/form-data 5Lorg/springframework/web/bind/annotation/RequestPart; )Lcom/smartrecruit/identity/api/Dto$Login; /login 
+SourceFile Controllers.java 8Lorg/springframework/web/bind/annotation/RestController; 8Lorg/springframework/web/bind/annotation/RequestMapping; /api/v1/auth NestHost A )com/smartrecruit/identity/api/Controllers InnerClasses Auth E *com/smartrecruit/identity/api/Dto$Register G !com/smartrecruit/identity/api/Dto Register J *com/smartrecruit/identity/api/Dto$UserView UserView M 'com/smartrecruit/identity/api/Dto$Login Login P 'com/smartrecruit/identity/api/Dto$Token Token !                    >     
+*� *+� �                   
+        
+    !         "      =     	*� +� �                   	        	 # $  !    #   %     &  '[ s ( )  'e * + ,   	    -   .     -   /     0      H     
+*� +,� �                    
+        
+ 1 $    
+ 2 3  !   	 1   2   %   !  &  '[ s 4 5[ s 6 )  'e * + ,   	    -   .     -   7    7           =     	*� +� �                   	        	 # 8  !    #   %     &  '[ s 9 ,   	    -   .     -   /    :    ; %     <   =  '[ s > ?    @ B   *   @ C 	 D F H  I F K  L F N  O F Q 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Controllers$Me.class =====
+����   = F
+      java/lang/Object <init> ()V	  	 
+   ,com/smartrecruit/identity/api/Controllers$Me s 3Lcom/smartrecruit/identity/service/IdentityService;      0org/springframework/security/core/Authentication getName ()Ljava/lang/String;
+      1com/smartrecruit/identity/service/IdentityService me @(Ljava/lang/String;)Lcom/smartrecruit/identity/api/Dto$UserView;
+     updateMe q(Ljava/lang/String;Lcom/smartrecruit/identity/api/Dto$UpdateProfile;)Lcom/smartrecruit/identity/api/Dto$UserView; 6(Lcom/smartrecruit/identity/service/IdentityService;)V Code LineNumberTable LocalVariableTable this .Lcom/smartrecruit/identity/api/Controllers$Me; MethodParameters `(Lorg/springframework/security/core/Authentication;)Lcom/smartrecruit/identity/api/Dto$UserView; a 2Lorg/springframework/security/core/Authentication; RuntimeVisibleAnnotations 4Lorg/springframework/web/bind/annotation/GetMapping; value /me update �(Lorg/springframework/security/core/Authentication;Lcom/smartrecruit/identity/api/Dto$UpdateProfile;)Lcom/smartrecruit/identity/api/Dto$UserView; d 1Lcom/smartrecruit/identity/api/Dto$UpdateProfile; 6Lorg/springframework/web/bind/annotation/PatchMapping; RuntimeVisibleTypeAnnotations Ljakarta/validation/Valid; "RuntimeVisibleParameterAnnotations 5Lorg/springframework/web/bind/annotation/RequestBody; 
+SourceFile Controllers.java 8Lorg/springframework/web/bind/annotation/RestController; 8Lorg/springframework/web/bind/annotation/RequestMapping; /api/v1/users NestHost ; )com/smartrecruit/identity/api/Controllers InnerClasses Me ? *com/smartrecruit/identity/api/Dto$UserView A !com/smartrecruit/identity/api/Dto UserView D /com/smartrecruit/identity/api/Dto$UpdateProfile UpdateProfile !                    >     
+*� *+� �                    
+ ! "     
+    #          $     B     *� +�  � �                     ! "      % &  #    %   '     (  )[ s *   + ,     M     *� +�  ,� �                      ! "      % &     - .  #   	 %   -   '     /  )[ s * 0   	   1   2       1   3    4    5 '     6   7  )[ s 8 9    : <      : = 	 > @ B  C @ E 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Controllers.class =====
+����   = 
+      java/lang/Object <init> ()V  )com/smartrecruit/identity/api/Controllers Code LineNumberTable LocalVariableTable this +Lcom/smartrecruit/identity/api/Controllers; 
+SourceFile Controllers.java NestMembers  /com/smartrecruit/identity/api/Controllers$Admin  ,com/smartrecruit/identity/api/Controllers$Me  .com/smartrecruit/identity/api/Controllers$Auth InnerClasses Admin Me Auth 1            	   /     *� �    
+                                          	    	    	
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Dto$Login.class =====
+����   = F
+      java/lang/Record <init> ()V	  	 
+   'com/smartrecruit/identity/api/Dto$Login email Ljava/lang/String;	     password      toString =(Lcom/smartrecruit/identity/api/Dto$Login;)Ljava/lang/String;      hashCode ,(Lcom/smartrecruit/identity/api/Dto$Login;)I      equals >(Lcom/smartrecruit/identity/api/Dto$Login;Ljava/lang/Object;)Z RuntimeVisibleAnnotations &Ljakarta/validation/constraints/Email; )Ljakarta/validation/constraints/NotBlank; RuntimeVisibleTypeAnnotations '(Ljava/lang/String;Ljava/lang/String;)V Code LineNumberTable LocalVariableTable this )Lcom/smartrecruit/identity/api/Dto$Login; MethodParameters "RuntimeVisibleParameterAnnotations ()Ljava/lang/String; ()I (Ljava/lang/Object;)Z o Ljava/lang/Object; 
+SourceFile Dto.java NestHost 1 !com/smartrecruit/identity/api/Dto Record BootstrapMethods 5
+ 6 7 8 9 : java/lang/runtime/ObjectMethods 	bootstrap �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object; < email;password   InnerClasses Login B %java/lang/invoke/MethodHandles$Lookup D java/lang/invoke/MethodHandles Lookup 1             
+                                                !   M     *� *+� *,� �    "        #         $ %               &   	                          '                 (  !   1     *�   �    "        #        $ %     )  !   1     *�   �    "        #        $ %     *  !   <     *+�   �    "        #        $ %      + ,  &    +     (  !   /     *� �    "        #        $ %      
+                       (  !   /     *� �    "        #        $ %                     -    . /    0 2   0                              3     4   ; = > ?      0 @  A C E 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Dto$Register.class =====
+����   = _
+      java/lang/Record <init> ()V	  	 
+   *com/smartrecruit/identity/api/Dto$Register email Ljava/lang/String;	     password	     fullName	     phone	     address	     city	     country     ! " toString @(Lcom/smartrecruit/identity/api/Dto$Register;)Ljava/lang/String;   $ % & hashCode /(Lcom/smartrecruit/identity/api/Dto$Register;)I   ( ) * equals A(Lcom/smartrecruit/identity/api/Dto$Register;Ljava/lang/Object;)Z RuntimeVisibleAnnotations &Ljakarta/validation/constraints/Email; )Ljakarta/validation/constraints/NotBlank; RuntimeVisibleTypeAnnotations %Ljakarta/validation/constraints/Size; min    max   H �(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V Code LineNumberTable LocalVariableTable this ,Lcom/smartrecruit/identity/api/Dto$Register; MethodParameters "RuntimeVisibleParameterAnnotations ()Ljava/lang/String; ()I (Ljava/lang/Object;)Z o Ljava/lang/Object; 
+SourceFile Dto.java NestHost E !com/smartrecruit/identity/api/Dto Record BootstrapMethods I
+ J K L M N java/lang/runtime/ObjectMethods 	bootstrap �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object; P 2email;password;fullName;phone;address;city;country        InnerClasses Register [ %java/lang/invoke/MethodHandles$Lookup ] java/lang/invoke/MethodHandles Lookup 1          +   
+  ,   -   .      ,    -       +     /  0I 1 2I 3 .      /  0I 1 2I 3     +     -   .      -                          4  5   �     ,*� *+� *,� *-� *� *� *� *� �    6        7   R    , 8 9     ,      ,      ,      ,      ,      ,      ,    :                         .   (    ,     -    /  0I 1 2I 3  -   ;   )  ,   -    /  0I 1 2I 3  -            ! <  5   1     *�   �    6        7        8 9    % =  5   1     *� #  �    6        7        8 9    ) >  5   <     *+� '  �    6        7        8 9      ? @  :    ?     <  5   /     *� �    6        7        8 9   +   
+  ,   -   .      ,    -     <  5   /     *� �    6        7        8 9   +     /  0I 1 2I 3 .      /  0I 1 2I 3   <  5   /     *� �    6        7        8 9   +     -   .      -     <  5   /     *� �    6        7        8 9     <  5   /     *� �    6        7        8 9     <  5   /     *� �    6        7        8 9     <  5   /     *� �    6        7        8 9    A    B C    D F   f     .      ,    -      .      /  0I 1 2I 3    .      -                   G     H 	  O Q R S T U V W X      D Y  Z \ ^ 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Dto$Reject.class =====
+����   = C
+      java/lang/Record <init> ()V	  	 
+   (com/smartrecruit/identity/api/Dto$Reject reason Ljava/lang/String;      toString >(Lcom/smartrecruit/identity/api/Dto$Reject;)Ljava/lang/String;      hashCode -(Lcom/smartrecruit/identity/api/Dto$Reject;)I      equals ?(Lcom/smartrecruit/identity/api/Dto$Reject;Ljava/lang/Object;)Z RuntimeVisibleAnnotations )Ljakarta/validation/constraints/NotBlank; %Ljakarta/validation/constraints/Size; max  � RuntimeVisibleTypeAnnotations (Ljava/lang/String;)V Code LineNumberTable LocalVariableTable this *Lcom/smartrecruit/identity/api/Dto$Reject; MethodParameters "RuntimeVisibleParameterAnnotations ()Ljava/lang/String; ()I (Ljava/lang/Object;)Z o Ljava/lang/Object; 
+SourceFile Dto.java NestHost 0 !com/smartrecruit/identity/api/Dto Record BootstrapMethods 4
+ 5 6 7 8 9 java/lang/runtime/ObjectMethods 	bootstrap �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object;   InnerClasses Reject ? %java/lang/invoke/MethodHandles$Lookup A java/lang/invoke/MethodHandles Lookup 1                    I              I           >     
+*� *+� �    !        "       
+ # $     
+    %                     I  &          I    '      1     *�   �    !        "        # $     (      1     *�   �    !        "        # $     )      <     *+�   �    !        "        # $      * +  %    *     '      /     *� �    !        "        # $             I              I   ,    - .    / 1   !                 I  2     3   : ; <      / =  > @ B 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Dto$Token.class =====
+����   = G
+      java/lang/Record <init> ()V	  	 
+   'com/smartrecruit/identity/api/Dto$Token accessToken Ljava/lang/String;	     	tokenType	     	expiresIn J      toString =(Lcom/smartrecruit/identity/api/Dto$Token;)Ljava/lang/String;      hashCode ,(Lcom/smartrecruit/identity/api/Dto$Token;)I      equals >(Lcom/smartrecruit/identity/api/Dto$Token;Ljava/lang/Object;)Z ((Ljava/lang/String;Ljava/lang/String;J)V Code LineNumberTable LocalVariableTable this )Lcom/smartrecruit/identity/api/Dto$Token; MethodParameters ()Ljava/lang/String; ()I (Ljava/lang/Object;)Z o Ljava/lang/Object; ()J 
+SourceFile Dto.java NestHost 1 !com/smartrecruit/identity/api/Dto Record BootstrapMethods 5
+ 6 7 8 9 : java/lang/runtime/ObjectMethods 	bootstrap �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object; < accessToken;tokenType;expiresIn    InnerClasses Token C %java/lang/invoke/MethodHandles$Lookup E java/lang/invoke/MethodHandles Lookup 1                           !   \     *� *+� *,� *!� �    "        #   *     $ %                     &               '  !   1     *�   �    "        #        $ %     (  !   1     *�   �    "        #        $ %     )  !   <     *+�   �    "        #        $ %      * +  &    *     '  !   /     *� �    "        #        $ %     '  !   /     *� �    "        #        $ %     ,  !   /     *� �    "        #        $ %    -    . /    0 2                 3     4   ; = > ? @      0 A  B D F 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Dto$UpdateProfile.class =====
+����   = V
+      java/lang/Record <init> ()V	  	 
+   /com/smartrecruit/identity/api/Dto$UpdateProfile fullName Ljava/lang/String;	     phone	     address	     city	     country      toString E(Lcom/smartrecruit/identity/api/Dto$UpdateProfile;)Ljava/lang/String;       hashCode 4(Lcom/smartrecruit/identity/api/Dto$UpdateProfile;)I   " # $ equals F(Lcom/smartrecruit/identity/api/Dto$UpdateProfile;Ljava/lang/Object;)Z RuntimeVisibleAnnotations %Ljakarta/validation/constraints/Size; max   � RuntimeVisibleTypeAnnotations   (   �   d ](Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V Code LineNumberTable LocalVariableTable this 1Lcom/smartrecruit/identity/api/Dto$UpdateProfile; MethodParameters "RuntimeVisibleParameterAnnotations ()Ljava/lang/String; ()I (Ljava/lang/Object;)Z o Ljava/lang/Object; 
+SourceFile Dto.java NestHost > !com/smartrecruit/identity/api/Dto Record BootstrapMethods B
+ C D E F G java/lang/runtime/ObjectMethods 	bootstrap �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object; I #fullName;phone;address;city;country      InnerClasses UpdateProfile R %java/lang/invoke/MethodHandles$Lookup T java/lang/invoke/MethodHandles Lookup 1          %     &  'I ( )      &  'I (     %     &  'I * )      &  'I *     %     &  'I + )      &  'I +     %     &  'I , )      &  'I ,     %     &  'I , )      &  'I , 	   -  .   |      *� *+� *,� *-� *� *� �    /        0   >      1 2                                      3                   )   >    &  'I (  &  'I *  &  'I +  &  'I ,  &  'I , 4   8  &  'I (  &  'I *  &  'I +  &  'I ,  &  'I ,   5  .   1     *�   �    /        0        1 2     6  .   1     *�   �    /        0        1 2    # 7  .   <     *+� !  �    /        0        1 2      8 9  3    8     5  .   /     *� �    /        0        1 2   %     &  'I ( )      &  'I (   5  .   /     *� �    /        0        1 2   %     &  'I * )      &  'I *   5  .   /     *� �    /        0        1 2   %     &  'I + )      &  'I +   5  .   /     *� �    /        0        1 2   %     &  'I , )      &  'I ,   5  .   /     *� �    /        0        1 2   %     &  'I , )      &  'I ,  :    ; <    = ?        )      &  'I (    )      &  'I *    )      &  'I +    )      &  'I ,    )      &  'I , @     A   H J K L M N O      = P  Q S U 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Dto$UserView.class =====
+����   = _
+      java/lang/Record <init> ()V	  	 
+   *com/smartrecruit/identity/api/Dto$UserView id Ljava/util/UUID;	     email Ljava/lang/String;	     fullName	     phone	     address	     city	     country	  ! "  role	  $ %  status   ' ( ) toString @(Lcom/smartrecruit/identity/api/Dto$UserView;)Ljava/lang/String;   + , - hashCode /(Lcom/smartrecruit/identity/api/Dto$UserView;)I   / 0 1 equals A(Lcom/smartrecruit/identity/api/Dto$UserView;Ljava/lang/Object;)Z �(Ljava/util/UUID;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V Code LineNumberTable LocalVariableTable this ,Lcom/smartrecruit/identity/api/Dto$UserView; MethodParameters ()Ljava/lang/String; ()I (Ljava/lang/Object;)Z o Ljava/lang/Object; ()Ljava/util/UUID; 
+SourceFile Dto.java NestHost C !com/smartrecruit/identity/api/Dto Record BootstrapMethods G
+ H I J K L java/lang/runtime/ObjectMethods 	bootstrap �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/TypeDescriptor;Ljava/lang/Class;Ljava/lang/String;[Ljava/lang/invoke/MethodHandle;)Ljava/lang/Object; N 8id;email;fullName;phone;address;city;country;role;status          # InnerClasses UserView [ %java/lang/invoke/MethodHandles$Lookup ] java/lang/invoke/MethodHandles Lookup 1     	                                     "     %       2  3   �  
+   8*� *+� *,� *-� *� *� *� *� *�  *	� #�    4        5   f 
+   8 6 7     8      8      8      8      8      8      8      8 "     8 %  	 8   %	                      "   %    ( 9  3   1     *� &  �    4        5        6 7    , :  3   1     *� *  �    4        5        6 7    0 ;  3   <     *+� .  �    4        5        6 7      < =  8    <     >  3   /     *� �    4        5        6 7     9  3   /     *� �    4        5        6 7     9  3   /     *� �    4        5        6 7     9  3   /     *� �    4        5        6 7     9  3   /     *� �    4        5        6 7     9  3   /     *� �    4        5        6 7     9  3   /     *� �    4        5        6 7    " 9  3   /     *�  �    4        5        6 7    % 9  3   /     *� #�    4        5        6 7    ?    @ A    B D   8 	                             "    %    E     F   M O P Q R S T U V W X      B Y  Z \ ^ 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\api\Dto.class =====
+����   = $
+      java/lang/Object <init> ()V  !com/smartrecruit/identity/api/Dto Code LineNumberTable LocalVariableTable this #Lcom/smartrecruit/identity/api/Dto; 
+SourceFile Dto.java NestMembers  (com/smartrecruit/identity/api/Dto$Reject  *com/smartrecruit/identity/api/Dto$UserView  /com/smartrecruit/identity/api/Dto$UpdateProfile  'com/smartrecruit/identity/api/Dto$Token  'com/smartrecruit/identity/api/Dto$Login  *com/smartrecruit/identity/api/Dto$Register InnerClasses Reject UserView UpdateProfile Token Login Register 1            	   /     *� �    
+                                        2                 !    "    # 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\config\Beans.class =====
+����   = 6
+      java/lang/Object <init> ()V
+  	 
+   io/minio/MinioClient builder  ()Lio/minio/MinioClient$Builder;
+      io/minio/MinioClient$Builder endpoint 2(Ljava/lang/String;)Lio/minio/MinioClient$Builder;
+     credentials D(Ljava/lang/String;Ljava/lang/String;)Lio/minio/MinioClient$Builder;
+     build ()Lio/minio/MinioClient;  &com/smartrecruit/identity/config/Beans Code LineNumberTable LocalVariableTable this (Lcom/smartrecruit/identity/config/Beans; minio N(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lio/minio/MinioClient; u Ljava/lang/String; a s MethodParameters RuntimeVisibleAnnotations -Lorg/springframework/context/annotation/Bean; "RuntimeVisibleParameterAnnotations 4Lorg/springframework/beans/factory/annotation/Value; value ${minio.url} ${minio.access-key} ${minio.secret-key} 
+SourceFile 
+Beans.java 6Lorg/springframework/context/annotation/Configuration; InnerClasses Builder !               /     *� �                      !     " #     X     � +� ,-� � �               *       !      $ %     & %     ' %  (    $   &   '   )     *   +   "  ,  -s .  ,  -s /  ,  -s 0  1    2 )     3   4   
+    5 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\config\SecurityConfig.class =====
+����   =�
+      java/lang/Object <init> ()V  @org/springframework/security/crypto/bcrypt/BCryptPasswordEncoder
+  
+   (I)V      loadUserByUsername w(Lcom/smartrecruit/identity/repo/Repositories$Users;)Lorg/springframework/security/core/userdetails/UserDetailsService;  Iorg/springframework/security/authentication/dao/DaoAuthenticationProvider
+  
+     setUserDetailsService E(Lorg/springframework/security/core/userdetails/UserDetailsService;)V
+     setPasswordEncoder A(Lorg/springframework/security/crypto/password/PasswordEncoder;)V  ;org/springframework/security/authentication/ProviderManager  Borg/springframework/security/authentication/AuthenticationProvider
+     ! H([Lorg/springframework/security/authentication/AuthenticationProvider;)V # javax/crypto/spec/SecretKeySpec	 % & ' ( ) !java/nio/charset/StandardCharsets UTF_8 Ljava/nio/charset/Charset;
+ + , - . / java/lang/String getBytes (Ljava/nio/charset/Charset;)[B 1 
+HmacSHA256
+ " 3  4 ([BLjava/lang/String;)V 6 8org/springframework/security/oauth2/jwt/NimbusJwtEncoder 8 ,com/nimbusds/jose/jwk/source/ImmutableSecret
+ 7 :  ; (Ljavax/crypto/SecretKey;)V
+ 5 =  > +(Lcom/nimbusds/jose/jwk/source/JWKSource;)V
+ @ A B C D 8org/springframework/security/oauth2/jwt/NimbusJwtDecoder withSecretKey o(Ljavax/crypto/SecretKey;)Lorg/springframework/security/oauth2/jwt/NimbusJwtDecoder$SecretKeyJwtDecoderBuilder;	 F G H I J 9org/springframework/security/oauth2/jose/jws/MacAlgorithm HS256 ;Lorg/springframework/security/oauth2/jose/jws/MacAlgorithm;
+ L M N O P Sorg/springframework/security/oauth2/jwt/NimbusJwtDecoder$SecretKeyJwtDecoderBuilder macAlgorithm �(Lorg/springframework/security/oauth2/jose/jws/MacAlgorithm;)Lorg/springframework/security/oauth2/jwt/NimbusJwtDecoder$SecretKeyJwtDecoderBuilder;
+ L R S T build <()Lorg/springframework/security/oauth2/jwt/NimbusJwtDecoder;
+ V W X Y Z 5org/springframework/security/oauth2/jwt/JwtValidators createDefaultWithIssuer S(Ljava/lang/String;)Lorg/springframework/security/oauth2/core/OAuth2TokenValidator;
+ @ \ ] ^ setJwtValidator B(Lorg/springframework/security/oauth2/core/OAuth2TokenValidator;)V ` ]org/springframework/security/oauth2/server/resource/authentication/JwtAuthenticationConverter
+ _   c d e convert 8()Lorg/springframework/core/convert/converter/Converter;
+ _ g h i !setJwtGrantedAuthoritiesConverter 9(Lorg/springframework/core/convert/converter/Converter;)V  k l m 	customize 2()Lorg/springframework/security/config/Customizer;
+ o p q r s Horg/springframework/security/config/annotation/web/builders/HttpSecurity csrf |(Lorg/springframework/security/config/Customizer;)Lorg/springframework/security/config/annotation/web/builders/HttpSecurity;  k
+ o v w s sessionManagement  k
+ o z { s authorizeHttpRequests  } l ~ �(Lorg/springframework/security/oauth2/server/resource/authentication/JwtAuthenticationConverter;)Lorg/springframework/security/config/Customizer;
+ o � � s oauth2ResourceServer
+ o � S � ()Ljava/lang/Object; � 4org/springframework/security/web/SecurityFilterChain  }
+ � � � � � torg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer jwt �(Lorg/springframework/security/config/Customizer;)Lorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer;
+ � � � � � �org/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer$JwtConfigurer jwtAuthenticationConverter �(Lorg/springframework/core/convert/converter/Converter;)Lorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer$JwtConfigurer; � /api/v1/auth/** � /swagger-ui/** � /v3/api-docs/** � /actuator/health
+ � � � � � �org/springframework/security/config/annotation/web/configurers/AuthorizeHttpRequestsConfigurer$AuthorizationManagerRequestMatcherRegistry requestMatchers '([Ljava/lang/String;)Ljava/lang/Object; � lorg/springframework/security/config/annotation/web/configurers/AuthorizeHttpRequestsConfigurer$AuthorizedUrl
+ � � � � 	permitAll �()Lorg/springframework/security/config/annotation/web/configurers/AuthorizeHttpRequestsConfigurer$AuthorizationManagerRequestMatcherRegistry;
+ � � � � 
+anyRequest
+ � � � � authenticated	 � � � � � >org/springframework/security/config/http/SessionCreationPolicy 	STATELESS @Lorg/springframework/security/config/http/SessionCreationPolicy;
+ � � � � � Zorg/springframework/security/config/annotation/web/configurers/SessionManagementConfigurer sessionCreationPolicy �(Lorg/springframework/security/config/http/SessionCreationPolicy;)Lorg/springframework/security/config/annotation/web/configurers/SessionManagementConfigurer;
+ � � � � � Morg/springframework/security/config/annotation/web/configurers/CsrfConfigurer disable J()Lorg/springframework/security/config/annotation/web/HttpSecurityBuilder; � aorg/springframework/security/oauth2/server/resource/authentication/JwtGrantedAuthoritiesConverter
+ �  � ROLE_
+ � � � � setAuthorityPrefix (Ljava/lang/String;)V
+ � � d � E(Lorg/springframework/security/oauth2/jwt/Jwt;)Ljava/util/Collection; � � � � � 1com/smartrecruit/identity/repo/Repositories$Users findByEmailIgnoreCase ((Ljava/lang/String;)Ljava/util/Optional;  � � � get ()Ljava/util/function/Supplier;
+ � � � � � java/util/Optional orElseThrow 1(Ljava/util/function/Supplier;)Ljava/lang/Object; � ,com/smartrecruit/identity/domain/Models$User	 � � � � email Ljava/lang/String;
+ � � � � � 2org/springframework/security/core/userdetails/User withUsername T(Ljava/lang/String;)Lorg/springframework/security/core/userdetails/User$UserBuilder;	 � � � � passwordHash
+ � � � � � >org/springframework/security/core/userdetails/User$UserBuilder password	 � � � � role .Lcom/smartrecruit/identity/domain/Models$Role;
+ � � � � � ,com/smartrecruit/identity/domain/Models$Role name ()Ljava/lang/String;
+ � � � � roles U([Ljava/lang/String;)Lorg/springframework/security/core/userdetails/User$UserBuilder;	 � �  status 0Lcom/smartrecruit/identity/domain/Models$Status;	 .com/smartrecruit/identity/domain/Models$Status ACTIVE
+ �	
+ disabled C(Z)Lorg/springframework/security/core/userdetails/User$UserBuilder;
+ � S =()Lorg/springframework/security/core/userdetails/UserDetails; Gorg/springframework/security/core/userdetails/UsernameNotFoundException Invalid credentials
+  � /com/smartrecruit/identity/config/SecurityConfig Code LineNumberTable LocalVariableTable this 1Lcom/smartrecruit/identity/config/SecurityConfig; passwordEncoder D()Lorg/springframework/security/crypto/bcrypt/BCryptPasswordEncoder; RuntimeVisibleAnnotations -Lorg/springframework/context/annotation/Bean; uds r 3Lcom/smartrecruit/identity/repo/Repositories$Users; MethodParameters manager �(Lorg/springframework/security/core/userdetails/UserDetailsService;Lorg/springframework/security/crypto/bcrypt/BCryptPasswordEncoder;)Lorg/springframework/security/authentication/AuthenticationManager; u BLorg/springframework/security/core/userdetails/UserDetailsService; p BLorg/springframework/security/crypto/bcrypt/BCryptPasswordEncoder; d KLorg/springframework/security/authentication/dao/DaoAuthenticationProvider; encoder H(Ljava/lang/String;)Lorg/springframework/security/oauth2/jwt/JwtEncoder; s 	secretKey !Ljavax/crypto/spec/SecretKeySpec; "RuntimeVisibleParameterAnnotations 4Lorg/springframework/beans/factory/annotation/Value; value ${identity.jwt.secret} decoder Z(Ljava/lang/String;Ljava/lang/String;)Lorg/springframework/security/oauth2/jwt/JwtDecoder; i :Lorg/springframework/security/oauth2/jwt/NimbusJwtDecoder; ${identity.jwt.issuer} chain �(Lorg/springframework/security/config/annotation/web/builders/HttpSecurity;)Lorg/springframework/security/web/SecurityFilterChain; h JLorg/springframework/security/config/annotation/web/builders/HttpSecurity; c _Lorg/springframework/security/oauth2/server/resource/authentication/JwtAuthenticationConverter; 
+ExceptionsA java/lang/Exception lambda$chain$7 �(Lorg/springframework/security/oauth2/server/resource/authentication/JwtAuthenticationConverter;Lorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer;)V o vLorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer; lambda$chain$6 �(Lorg/springframework/security/oauth2/server/resource/authentication/JwtAuthenticationConverter;Lorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer$JwtConfigurer;)V j �Lorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer$JwtConfigurer; lambda$chain$5 �(Lorg/springframework/security/config/annotation/web/configurers/AuthorizeHttpRequestsConfigurer$AuthorizationManagerRequestMatcherRegistry;)V a �Lorg/springframework/security/config/annotation/web/configurers/AuthorizeHttpRequestsConfigurer$AuthorizationManagerRequestMatcherRegistry; lambda$chain$4 _(Lorg/springframework/security/config/annotation/web/configurers/SessionManagementConfigurer;)V x \Lorg/springframework/security/config/annotation/web/configurers/SessionManagementConfigurer; lambda$chain$3 R(Lorg/springframework/security/config/annotation/web/configurers/CsrfConfigurer;)V OLorg/springframework/security/config/annotation/web/configurers/CsrfConfigurer; lambda$chain$2 -Lorg/springframework/security/oauth2/jwt/Jwt; 	converter cLorg/springframework/security/oauth2/server/resource/authentication/JwtGrantedAuthoritiesConverter; lambda$uds$1 �(Lcom/smartrecruit/identity/repo/Repositories$Users;Ljava/lang/String;)Lorg/springframework/security/core/userdetails/UserDetails; .Lcom/smartrecruit/identity/domain/Models$User; StackMapTable lambda$uds$0 K()Lorg/springframework/security/core/userdetails/UsernameNotFoundException; 
+SourceFile SecurityConfig.java 6Lorg/springframework/context/annotation/Configuration; ZLorg/springframework/security/config/annotation/method/configuration/EnableMethodSecurity; BootstrapMethodse
+fghij "java/lang/invoke/LambdaMetafactory metafactory �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite;l O(Ljava/lang/String;)Lorg/springframework/security/core/userdetails/UserDetails;n
+oYZq &(Ljava/lang/Object;)Ljava/lang/Object;s
+tU � �w (Ljava/lang/Object;)Vy
+zRSS}
+~NOO�
+�JKK�
+�BC� y(Lorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer;)V�
+�FG� �(Lorg/springframework/security/config/annotation/web/configurers/oauth2/server/resource/OAuth2ResourceServerConfigurer$JwtConfigurer;)V ��
+�]^^ InnerClasses� +com/smartrecruit/identity/repo/Repositories Users SecretKeyJwtDecoderBuilder JwtConfigurer� ^org/springframework/security/config/annotation/web/configurers/AuthorizeHttpRequestsConfigurer *AuthorizationManagerRequestMatcherRegistry AuthorizedUrl� 'com/smartrecruit/identity/domain/Models User UserBuilder Role Status� %java/lang/invoke/MethodHandles$Lookup� java/lang/invoke/MethodHandles Lookup !             /     *� �          !               4     
+� Y� 	�          %       
+               ;     +�   �          *             ! "              #$    v     "� Y� N-+� -,� � Y� Y-S� �          7  8  9  :   *    "     "%&    "'(   )* "   	%  '          +,    c     !� "Y+� $� *0� 2M� 5Y� 7Y,� 9� <�      
+    ?  @        !     !- �   ./ "   -        0    1 2s3  45    �     ,� "Y+� $� *0� 2N-� ?� E� K� Q:,� U� [�          E  F  G  H   I ) J   4    ,     ,- �    ,6 �   ./    )7 "   	-  6        0    1 2s3 1 2s8  9:    �     :� _Y� aM,� b  � f+� j  � n� t  � u� x  � y,� |  � � �� ��      "    O  P  U  V ' W 0 X 3 Y 9 U        :     :;<   2=> ?    @"   ;        
+BC    @     +*� �  � �W�          X       =>     DE 
+FG    ;     +*� �W�          X       =>     HI 
+JK    W     -*� +Y�SY�SY�SY�S� �� �� �� �� �� �W�          W       -LM  
+NO    3     	*� �� �W�          V       	PQ  
+RS    0     *� �W�          U       PT  
+U �    P     � �Y� �L+ö �+*� ɰ          Q  R  S       HV    WX 
+YZ    �     H*+� � � �  � �� �M,� ޸ �,� � �� +Y,� � �S� �,� ��� � ���      "    +  ,  -  . + / A 0 D 1 G -        H !     H � �   5%[ \   ) � @  � + �  ��    � + �  �?    
+]^    #      �Y��          , _   `   
+ a  b  c   R d kmkd prud vx{d v|d v��d v��d v��d ����   R 
+ ���	 L @�  � ��  ���  ���  ��� 	 � ��  ���@��@��� 
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\domain\Models$RecruiterProfile.class =====
+����   = '
+      java/lang/Object <init> ()V  8com/smartrecruit/identity/domain/Models$RecruiterProfile userId Ljava/util/UUID; RuntimeVisibleAnnotations Ljakarta/persistence/Id; employmentProofObjectKey Ljava/lang/String; Ljakarta/persistence/Column; nullable     approvalStatus rejectionReason 
+approvedBy 
+approvedAt Ljava/time/Instant; Code LineNumberTable LocalVariableTable this :Lcom/smartrecruit/identity/domain/Models$RecruiterProfile; 
+SourceFile Models.java Ljakarta/persistence/Entity; Ljakarta/persistence/Table; name recruiter_profiles NestHost $ 'com/smartrecruit/identity/domain/Models InnerClasses RecruiterProfile !       	 
+                     Z              
+                /     *� �                                         s ! "    # %   
+   # & 	
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\domain\Models$Role.class =====
+����   = >  ,com/smartrecruit/identity/domain/Models$Role	     	CANDIDATE .Lcom/smartrecruit/identity/domain/Models$Role;	   	  	RECRUITER	     PLATFORM_ADMINISTRATOR	     $VALUES /[Lcom/smartrecruit/identity/domain/Models$Role;
+      clone ()Ljava/lang/Object;
+      java/lang/Enum valueOf 5(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;
+     <init> (Ljava/lang/String;I)V 
+   	 
+  % & ' $values 1()[Lcom/smartrecruit/identity/domain/Models$Role; values Code LineNumberTable B(Ljava/lang/String;)Lcom/smartrecruit/identity/domain/Models$Role; LocalVariableTable name Ljava/lang/String; MethodParameters this 
+$enum$name $enum$ordinal 	Signature ()V <clinit> @Ljava/lang/Enum<Lcom/smartrecruit/identity/domain/Models$Role;>; 
+SourceFile Models.java NestHost ; 'com/smartrecruit/identity/domain/Models InnerClasses Role@1     @    @ 	   @          	 ( '  )   "      
+� � � �    *        	  +  )   4     
+*� � �    *        ,       
+ - .   /    -�      )   1     *+� �    *        ,        0    /   	 1  2  3    4
+ & '  )   /      � Y� SY� SY� 
+S�    *         5 4  )   F      .� Y � !� � Y"� !� � Y#� !� 
+� $� �    *         3    6 7    8 9    : <   
+   : =@
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\domain\Models$Status.class =====
+����   = B  .com/smartrecruit/identity/domain/Models$Status	     ACTIVE 0Lcom/smartrecruit/identity/domain/Models$Status;	   	  PENDING	     REJECTED	     INACTIVE	     $VALUES 1[Lcom/smartrecruit/identity/domain/Models$Status;
+      clone ()Ljava/lang/Object;
+      java/lang/Enum valueOf 5(Ljava/lang/Class;Ljava/lang/String;)Ljava/lang/Enum;
+    ! " <init> (Ljava/lang/String;I)V 
+    	  
+  ) * + $values 3()[Lcom/smartrecruit/identity/domain/Models$Status; values Code LineNumberTable D(Ljava/lang/String;)Lcom/smartrecruit/identity/domain/Models$Status; LocalVariableTable name Ljava/lang/String; MethodParameters this 
+$enum$name $enum$ordinal 	Signature ()V <clinit> BLjava/lang/Enum<Lcom/smartrecruit/identity/domain/Models$Status;>; 
+SourceFile Models.java NestHost ? 'com/smartrecruit/identity/domain/Models InnerClasses Status@1     @    @ 	   @    @          	 , +  -   "      
+� � � �    .        	  /  -   4     
+*� � �    .        0       
+ 1 2   3    1�   ! "  -   1     *+� �    .        0        4    3   	 5  6  7    8
+ * +  -   5      � Y� SY� SY� 
+SY� S�    .         9 8  -   S      ;� Y#� $� � Y%� $� � Y&� $� 
+� Y'� $� � (� �    .         7    : ;    < =    > @   
+   > A@
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\domain\Models$User.class =====
+����   = T
+      java/lang/Object <init> ()V	  	 
+   ,com/smartrecruit/identity/domain/Models$User id Ljava/util/UUID;
+      java/util/UUID 
+randomUUID ()Ljava/util/UUID;
+      java/time/Instant now ()Ljava/time/Instant;	     	updatedAt Ljava/time/Instant;	     	createdAt RuntimeVisibleAnnotations Ljakarta/persistence/Id; email Ljava/lang/String; Ljakarta/persistence/Column; unique    nullable     passwordHash name password_hash fullName 	full_name phone address city country role .Lcom/smartrecruit/identity/domain/Models$Role;  Ljakarta/persistence/Enumerated; value Ljakarta/persistence/EnumType; STRING status 0Lcom/smartrecruit/identity/domain/Models$Status; Code LineNumberTable LocalVariableTable this .Lcom/smartrecruit/identity/domain/Models$User; create StackMapTable  Ljakarta/persistence/PrePersist; update Ljakarta/persistence/PreUpdate; 
+SourceFile Models.java Ljakarta/persistence/Entity; Ljakarta/persistence/Table; users NestHost K 'com/smartrecruit/identity/domain/Models InnerClasses User O ,com/smartrecruit/identity/domain/Models$Role Role R .com/smartrecruit/identity/domain/Models$Status Status !                !    " #        $  %Z & 'Z (  ) #        $  *s + 'Z (  , #        $  *s - 'Z (  . #    / #    0 #    1 #    2 3        4  5e 6 7  8 9        4  5e 6 7                :   /     *� �    ;        <        = >     ?   :   h     "**� � 	� � *� � **� Z� � �    ;        <       " = >   @    N �             A     B   :   2     *� � �    ;        <        = >         C    D    E       F   G  *s H I    J L      J M 	 N J P@ Q J S@
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\domain\Models.class =====
+����   = 
+      java/lang/Object <init> ()V  'com/smartrecruit/identity/domain/Models Code LineNumberTable LocalVariableTable this )Lcom/smartrecruit/identity/domain/Models; 
+SourceFile Models.java NestMembers  8com/smartrecruit/identity/domain/Models$RecruiterProfile  ,com/smartrecruit/identity/domain/Models$User  .com/smartrecruit/identity/domain/Models$Status  ,com/smartrecruit/identity/domain/Models$Role InnerClasses RecruiterProfile User Status Role 1            	   /     *� �    
+                             
+         "     	    	   @   @
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\IdentityApplication.class =====
+����   = 
+      java/lang/Object <init> ()V  -com/smartrecruit/identity/IdentityApplication
+ 
+     *org/springframework/boot/SpringApplication run b(Ljava/lang/Class;[Ljava/lang/String;)Lorg/springframework/context/ConfigurableApplicationContext; Code LineNumberTable LocalVariableTable this /Lcom/smartrecruit/identity/IdentityApplication; main ([Ljava/lang/String;)V a [Ljava/lang/String; MethodParameters 
+SourceFile IdentityApplication.java RuntimeVisibleAnnotations >Lorg/springframework/boot/autoconfigure/SpringBootApplication; !               /     *� �                        	       2     *� 	W�                                            
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\repo\Repositories$Recruiters.class =====
+����   =   6com/smartrecruit/identity/repo/Repositories$Recruiters  java/lang/Object  5org/springframework/data/jpa/repository/JpaRepository 	Signature �Ljava/lang/Object;Lorg/springframework/data/jpa/repository/JpaRepository<Lcom/smartrecruit/identity/domain/Models$RecruiterProfile;Ljava/util/UUID;>; 
+SourceFile Repositories.java NestHost  +com/smartrecruit/identity/repo/Repositories InnerClasses 
+Recruiters  8com/smartrecruit/identity/domain/Models$RecruiterProfile  'com/smartrecruit/identity/domain/Models RecruiterProfile               	    
+             	    	
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\repo\Repositories$Users.class =====
+����   =   1com/smartrecruit/identity/repo/Repositories$Users  java/lang/Object  5org/springframework/data/jpa/repository/JpaRepository findByEmailIgnoreCase ((Ljava/lang/String;)Ljava/util/Optional; MethodParameters email 	Signature X(Ljava/lang/String;)Ljava/util/Optional<Lcom/smartrecruit/identity/domain/Models$User;>; existsByEmailIgnoreCase (Ljava/lang/String;)Z �Ljava/lang/Object;Lorg/springframework/data/jpa/repository/JpaRepository<Lcom/smartrecruit/identity/domain/Models$User;Ljava/util/UUID;>; 
+SourceFile Repositories.java NestHost  +com/smartrecruit/identity/repo/Repositories InnerClasses Users  ,com/smartrecruit/identity/domain/Models$User  'com/smartrecruit/identity/domain/Models User           	    
+           	    
+                          	    	
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\repo\Repositories.class =====
+����   = 
+      java/lang/Object <init> ()V  +com/smartrecruit/identity/repo/Repositories Code LineNumberTable LocalVariableTable this -Lcom/smartrecruit/identity/repo/Repositories; 
+SourceFile Repositories.java NestMembers  6com/smartrecruit/identity/repo/Repositories$Recruiters  1com/smartrecruit/identity/repo/Repositories$Users InnerClasses 
+Recruiters Users 1            	   /     *� �    
+                                        	   	
+
+===== FILE: services\identity-service\target\classes\com\smartrecruit\identity\service\IdentityService.class =====
+����   =<
+      java/lang/Object <init> ()V	  	 
+   1com/smartrecruit/identity/service/IdentityService users 3Lcom/smartrecruit/identity/repo/Repositories$Users;	     
+recruiters 8Lcom/smartrecruit/identity/repo/Repositories$Recruiters;	     	passwords >Lorg/springframework/security/crypto/password/PasswordEncoder;	     auth CLorg/springframework/security/authentication/AuthenticationManager;	     jwt 4Lorg/springframework/security/oauth2/jwt/JwtEncoder;	      minio Lio/minio/MinioClient;	 " # $ % & ,com/smartrecruit/identity/domain/Models$Role 	CANDIDATE .Lcom/smartrecruit/identity/domain/Models$Role;	 ( ) * + , .com/smartrecruit/identity/domain/Models$Status ACTIVE 0Lcom/smartrecruit/identity/domain/Models$Status;
+  . / 0 create �(Lcom/smartrecruit/identity/api/Dto$Register;Lcom/smartrecruit/identity/domain/Models$Role;Lcom/smartrecruit/identity/domain/Models$Status;)Lcom/smartrecruit/identity/api/Dto$UserView;
+  2 3 4 validate 4(Lorg/springframework/web/multipart/MultipartFile;)V
+ 6 7 8 9 : java/util/UUID 
+randomUUID ()Ljava/util/UUID; < = > ? @ /org/springframework/web/multipart/MultipartFile getOriginalFilename ()Ljava/lang/String;
+  B C D ext &(Ljava/lang/String;)Ljava/lang/String;   F G H makeConcatWithConstants 6(Ljava/util/UUID;Ljava/lang/String;)Ljava/lang/String;
+ J K L M N io/minio/PutObjectArgs builder "()Lio/minio/PutObjectArgs$Builder;	  P Q R bucket Ljava/lang/String;
+ T U V Q W io/minio/PutObjectArgs$Builder 1(Ljava/lang/String;)Lio/minio/BucketArgs$Builder;
+ T Y Z [ object 1(Ljava/lang/String;)Lio/minio/ObjectArgs$Builder; < ] ^ _ getInputStream ()Ljava/io/InputStream; < a b c getSize ()J��������
+ T g h i stream 9(Ljava/io/InputStream;JJ)Lio/minio/PutObjectArgs$Builder; < k l @ getContentType
+ T n o p contentType 4(Ljava/lang/String;)Lio/minio/PutObjectArgs$Builder;
+ T r s t build ()Lio/minio/BaseArgs;
+ v w x y z io/minio/MinioClient 	putObject 8(Lio/minio/PutObjectArgs;)Lio/minio/ObjectWriteResponse;	 " | } & 	RECRUITER	 (  � , PENDING � 8com/smartrecruit/identity/domain/Models$RecruiterProfile
+ � 
+ � � � � : *com/smartrecruit/identity/api/Dto$UserView id	 � � � � userId Ljava/util/UUID;	 � � � R employmentProofObjectKey �	 � � � R approvalStatus � � � � � 6com/smartrecruit/identity/repo/Repositories$Recruiters save &(Ljava/lang/Object;)Ljava/lang/Object; � java/lang/Exception � java/lang/IllegalStateException � Employment proof storage failed
+ � �  � *(Ljava/lang/String;Ljava/lang/Throwable;)V
+ � � � � @ *com/smartrecruit/identity/api/Dto$Register email � � � � � 1com/smartrecruit/identity/repo/Repositories$Users existsByEmailIgnoreCase (Ljava/lang/String;)Z � "java/lang/IllegalArgumentException � Email already registered
+ � �  � (Ljava/lang/String;)V � ,com/smartrecruit/identity/domain/Models$User
+ � 
+ � � � � @ java/lang/String trim
+ � � � @ toLowerCase	 � � � R
+ � � � @ password � � � � � <org/springframework/security/crypto/password/PasswordEncoder encode ,(Ljava/lang/CharSequence;)Ljava/lang/String;	 � � � R passwordHash
+ � � � @ fullName	 � � � R
+ � � � @ phone	 � � � R
+ � � � @ address	 � � � R
+ � � � @ city	 � � � R
+ � � � @ country	 � � � R	 � � � & role	 � � � , status � �
+  � � � view \(Lcom/smartrecruit/identity/domain/Models$User;)Lcom/smartrecruit/identity/api/Dto$UserView; � Oorg/springframework/security/authentication/UsernamePasswordAuthenticationToken
+ � � � 'com/smartrecruit/identity/api/Dto$Login
+ � �
+ � �  � '(Ljava/lang/Object;Ljava/lang/Object;)V � � � �  Aorg/springframework/security/authentication/AuthenticationManager authenticate f(Lorg/springframework/security/core/Authentication;)Lorg/springframework/security/core/Authentication; � findByEmailIgnoreCase ((Ljava/lang/String;)Ljava/util/Optional;
+	
+ java/util/Optional orElseThrow ()Ljava/lang/Object;
+ java/time/Instant now ()Ljava/time/Instant;
+ M 4org/springframework/security/oauth2/jwt/JwtClaimsSet @()Lorg/springframework/security/oauth2/jwt/JwtClaimsSet$Builder;	  R issuer
+ <org/springframework/security/oauth2/jwt/JwtClaimsSet$Builder R(Ljava/lang/String;)Lorg/springframework/security/oauth2/jwt/JwtClaimsSet$Builder;
+  subject
+"#$ issuedAt S(Ljava/time/Instant;)Lorg/springframework/security/oauth2/jwt/JwtClaimsSet$Builder;      
+()* plusSeconds (J)Ljava/time/Instant;
+,-$ 	expiresAt/ user_id	 �1 � �
+ 634 @ toString
+678 claim d(Ljava/lang/String;Ljava/lang/Object;)Lorg/springframework/security/oauth2/jwt/JwtClaimsSet$Builder;: roles
+ "<= @ name?@ABC java/util/List of $(Ljava/lang/Object;)Ljava/util/List;
+E sF 8()Lorg/springframework/security/oauth2/jwt/JwtClaimsSet;	HIJKL 9org/springframework/security/oauth2/jose/jws/MacAlgorithm HS256 ;Lorg/springframework/security/oauth2/jose/jws/MacAlgorithm;
+NOPQR 1org/springframework/security/oauth2/jwt/JwsHeader with x(Lorg/springframework/security/oauth2/jose/jws/JwsAlgorithm;)Lorg/springframework/security/oauth2/jwt/JwsHeader$Builder;
+TUV sW 9org/springframework/security/oauth2/jwt/JwsHeader$Builder 5()Lorg/springframework/security/oauth2/jwt/JwsHeader;
+YZ[\] <org/springframework/security/oauth2/jwt/JwtEncoderParameters from �(Lorg/springframework/security/oauth2/jwt/JwsHeader;Lorg/springframework/security/oauth2/jwt/JwtClaimsSet;)Lorg/springframework/security/oauth2/jwt/JwtEncoderParameters;_`a �b 2org/springframework/security/oauth2/jwt/JwtEncoder m(Lorg/springframework/security/oauth2/jwt/JwtEncoderParameters;)Lorg/springframework/security/oauth2/jwt/Jwt;
+defg @ +org/springframework/security/oauth2/jwt/Jwt getTokenValuei 'com/smartrecruit/identity/api/Dto$Tokenk Bearer
+hm n ((Ljava/lang/String;Ljava/lang/String;J)V
+p �q /com/smartrecruit/identity/api/Dto$UpdateProfile
+p �
+p �
+p �
+p � �wxy findAll ()Ljava/util/List;?{ h| ()Ljava/util/stream/Stream; ~� apply R(Lcom/smartrecruit/identity/service/IdentityService;)Ljava/util/function/Function;����� java/util/stream/Stream map 8(Ljava/util/function/Function;)Ljava/util/stream/Stream;���y toList ���� findById ((Ljava/lang/Object;)Ljava/util/Optional;� Not recruiter ��� APPROVED	 ��� � 
+approvedBy	 ���� 
+approvedAt Ljava/time/Instant;	 ��� R rejectionReason	 (�� , REJECTED�
+ (<
+ �� � �(Ljava/util/UUID;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V <��� isEmpty ()Z     �  � Proof required, max 10 MB� application/pdf� 
+image/jpeg� 	image/png?�B� H(Ljava/lang/Object;Ljava/lang/Object;Ljava/lang/Object;)Ljava/util/List;?��� contains (Ljava/lang/Object;)Z� PDF/JPEG/PNG only� .
+ ���� (Ljava/lang/CharSequence;)Z
+ ���� lastIndexOf (I)I
+ ���� 	substring (I)Ljava/lang/String;� .bin RuntimeVisibleAnnotations 4Lorg/springframework/beans/factory/annotation/Value; value ${identity.jwt.issuer} ${minio.bucket}9(Lcom/smartrecruit/identity/repo/Repositories$Users;Lcom/smartrecruit/identity/repo/Repositories$Recruiters;Lorg/springframework/security/crypto/password/PasswordEncoder;Lorg/springframework/security/authentication/AuthenticationManager;Lorg/springframework/security/oauth2/jwt/JwtEncoder;Lio/minio/MinioClient;)V Code LineNumberTable LocalVariableTable this 3Lcom/smartrecruit/identity/service/IdentityService; u r p a j m MethodParameters registerCandidate Z(Lcom/smartrecruit/identity/api/Dto$Register;)Lcom/smartrecruit/identity/api/Dto$UserView; d ,Lcom/smartrecruit/identity/api/Dto$Register; :Lorg/springframework/transaction/annotation/Transactional; registerRecruiter �(Lcom/smartrecruit/identity/api/Dto$Register;Lorg/springframework/web/multipart/MultipartFile;)Lcom/smartrecruit/identity/api/Dto$UserView; v ,Lcom/smartrecruit/identity/api/Dto$UserView; :Lcom/smartrecruit/identity/domain/Models$RecruiterProfile; e Ljava/lang/Exception; f 1Lorg/springframework/web/multipart/MultipartFile; key StackMapTable .Lcom/smartrecruit/identity/domain/Models$User; login T(Lcom/smartrecruit/identity/api/Dto$Login;)Lcom/smartrecruit/identity/api/Dto$Token; )Lcom/smartrecruit/identity/api/Dto$Login; claims 6Lorg/springframework/security/oauth2/jwt/JwtClaimsSet; token me @(Ljava/lang/String;)Lcom/smartrecruit/identity/api/Dto$UserView; updateMe q(Ljava/lang/String;Lcom/smartrecruit/identity/api/Dto$UpdateProfile;)Lcom/smartrecruit/identity/api/Dto$UserView; 1Lcom/smartrecruit/identity/api/Dto$UpdateProfile; all 	Signature @()Ljava/util/List<Lcom/smartrecruit/identity/api/Dto$UserView;>; n(Ljava/util/UUID;Lcom/smartrecruit/identity/domain/Models$Status;)Lcom/smartrecruit/identity/api/Dto$UserView; s approve N(Ljava/util/UUID;Ljava/util/UUID;)Lcom/smartrecruit/identity/api/Dto$UserView; admin reject `(Ljava/util/UUID;Ljava/util/UUID;Ljava/lang/String;)Lcom/smartrecruit/identity/api/Dto$UserView; reason t n 
+SourceFile IdentityService.java (Lorg/springframework/stereotype/Service; BootstrapMethods
+ G $java/lang/invoke/StringConcatFactory �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/invoke/CallSite; employment-proofs/
+ "java/lang/invoke/LambdaMetafactory metafactory �(Ljava/lang/invoke/MethodHandles$Lookup;Ljava/lang/String;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodType;Ljava/lang/invoke/MethodHandle;Ljava/lang/invoke/MethodType;)Ljava/lang/invoke/CallSite; � � � InnerClasses +com/smartrecruit/identity/repo/Repositories Users 
+Recruiters" 'com/smartrecruit/identity/domain/Models Role Status& !com/smartrecruit/identity/api/Dto Register UserView Builder+ io/minio/BucketArgs$Builder- io/minio/BucketArgs/ io/minio/ObjectArgs$Builder1 io/minio/ObjectArgs RecruiterProfile User Login Token UpdateProfile8 %java/lang/invoke/MethodHandles$Lookup: java/lang/invoke/MethodHandles Lookup !                                       R �    � �s�   Q R �    � �s�   � �   �     &*� *+� *,� *-� *� *� *� �   �       �   H    &��     &�     &�     &�     &�     &�     &�   �   �  �  �  �  �  �   �� �   @     *+� !� '� -�   �       �       ��     �� �   �  �    �   �� �  +     �*,� 1� 5*,� ; � A� E  N*� � I*� O� S� T-� X� T,� \ ,� `  d� f,� j � m� q� J� uW*+� {� ~� -:� �Y� �:� �� �-� ��� �*� � � W�:� �Y�� ��   � � � �       �   H  b /��  k &��  � ��    ���     ���    ���   �� R �    � �   � < �  ��   	�  �  �    �    / 0 �   �     �*� +� �� � � � �Y�� ��� �Y� �:+� �� �� �� �*� +� ¹ � � �+� ε �+� ӵ �+� ص �+� ݵ �+� � �,� �-� �**� � � � �� �   �       �   4    ���     ���    � � &    � � ,  # m�� �    �   �   �   �   �� �   �     �*� � �Y+� �+� �� �� � W*� +� � �� �M�N�*��,� ��-�!-%�'�+.,�0�2�59,� �;�>�5�D:*� �G�M�S�X�^ �c:�hYj%�l�   �       �   >    ���     ���  - q��  1 m�  r ,��  � � R �   �   �� �   I     **� +� �� �� �   �       	�       ��      � R �    �   �� �   �     b*� +� �� �N,�o� -,�o� �,�r� -,�r� �,�s� -,�s� �,�t� -,�t� �,�u� -,�u� �*-� �   �       	�   *    b��     b � R    b��   Q�� �    �   ��   	 �  �  �    �   �y �   I     *� �v �z *�}  �� �� �   �       
+�       ��  �   �  �� �   d     *� +�� �� �N-,� �*-� �   �       
+�   *    ��      � �    � ,   �� �   	 �  �  �    �   �� �   �     a*� +�� �� �N-� � {� � �Y�� ��-� '� �*� +�� �� �:�� �,�������*-� �   �       
+�   4    a��     a � �    a  �   P��  ? "�� �    � & ��   	 �     �    �    �   �     G*� +�� �� �:��� �*� +�� �� �:�� �,��-��*� �   �       
+�   >    G��     G � �    G  �    G R   5��  , �� �    �       �    �    � � �   f     2� �Y+�0+� �+� �+� �+� �+� �+� �+� �;+� �����   �       �       2��     2�� �   �    3 4 �   �     M+� +�� � +� ` ��� � �Y�� ��+� j M�����,�� � � �Y�� ���   �       �        M��     M��  , ! R �   
+ 
+� & ��   �    C D �   `     +� +���� ++.���ŧ ɰ   �       �       ��      R �    B ��         �      	    
+     �  �	 � 	 "!#@ (!$@ �%'  �%(  T J) *,)	.0)	 �!2 	 �!3 	 �%4 ) TN) h%5 p%6 79; 
+
+===== FILE: services\identity-service\target\classes\db\migration\V1__identity.sql =====
+CREATE TABLE users(id UUID PRIMARY KEY,email VARCHAR(320) UNIQUE NOT NULL,password_hash VARCHAR(255) NOT NULL,full_name VARCHAR(150) NOT NULL,phone VARCHAR(40),address VARCHAR(255),city VARCHAR(100),country VARCHAR(100),role VARCHAR(40) NOT NULL,status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE recruiter_profiles(user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,employment_proof_object_key VARCHAR(500) NOT NULL,approval_status VARCHAR(30) NOT NULL,rejection_reason VARCHAR(500),approved_by UUID,approved_at TIMESTAMPTZ);
+CREATE TABLE candidate_profiles(user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE);
+CREATE TABLE admin_profiles(user_id UUID PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE);
+
+
+===== FILE: services\identity-service\target\maven-status\maven-compiler-plugin\compile\default-compile\createdFiles.lst =====
+com\smartrecruit\identity\repo\Repositories$Recruiters.class
+com\smartrecruit\identity\api\Dto$UserView.class
+com\smartrecruit\identity\domain\Models$User.class
+com\smartrecruit\identity\api\Dto$Register.class
+com\smartrecruit\identity\api\Controllers$Admin.class
+com\smartrecruit\identity\repo\Repositories$Users.class
+com\smartrecruit\identity\api\Dto$Login.class
+com\smartrecruit\identity\config\SecurityConfig.class
+com\smartrecruit\identity\api\Controllers.class
+com\smartrecruit\identity\api\Dto.class
+com\smartrecruit\identity\domain\Models$Status.class
+com\smartrecruit\identity\service\IdentityService.class
+com\smartrecruit\identity\domain\Models$Role.class
+com\smartrecruit\identity\api\Controllers$Me.class
+com\smartrecruit\identity\repo\Repositories.class
+com\smartrecruit\identity\api\Dto$Token.class
+com\smartrecruit\identity\domain\Models$RecruiterProfile.class
+com\smartrecruit\identity\domain\Models.class
+com\smartrecruit\identity\api\ApiExceptionHandler$ErrorBody.class
+com\smartrecruit\identity\api\Controllers$Auth.class
+com\smartrecruit\identity\IdentityApplication.class
+com\smartrecruit\identity\api\Dto$Reject.class
+com\smartrecruit\identity\api\Dto$UpdateProfile.class
+com\smartrecruit\identity\api\ApiExceptionHandler.class
+com\smartrecruit\identity\config\Beans.class
+
+
+===== FILE: services\identity-service\target\maven-status\maven-compiler-plugin\compile\default-compile\inputFiles.lst =====
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\api\ApiExceptionHandler.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\IdentityApplication.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\config\Beans.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\service\IdentityService.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\domain\Models.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\repo\Repositories.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\config\SecurityConfig.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\api\Controllers.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\identity-service\src\main\java\com\smartrecruit\identity\api\Dto.java
+
+
+===== FILE: services\infrastructure\postgres\init.sql =====
+CREATE DATABASE smartrecruit_identity;
+CREATE DATABASE smartrecruit_recruitment;
+CREATE DATABASE smartrecruit_candidate;
+CREATE DATABASE smartrecruit_subscription;
+CREATE DATABASE smartrecruit_interview;
+CREATE DATABASE smartrecruit_notification;
+CREATE DATABASE smartrecruit_analytics;
+
+
+===== FILE: services\interview-service\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\interview-service\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>interview-service</artifactId><dependencies>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency><dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency><dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.8.6</version></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency></dependencies></project>
+
+===== FILE: services\interview-service\src\main\java\com\smartrecruit\interview\InterviewServiceApplication.java =====
+package com.smartrecruit.interview; import org.springframework.boot.*; import org.springframework.boot.autoconfigure.*; @SpringBootApplication public class InterviewServiceApplication{public static void main(String[]a){SpringApplication.run(InterviewServiceApplication.class,a);}}
+
+===== FILE: services\interview-service\src\main\resources\application.yml =====
+server: {port: 8093}
+spring:
+ application.name: interview-service
+ datasource: {url: "${INTERVIEW_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_interview}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+ jpa.hibernate.ddl-auto: validate
+ flyway.enabled: true
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\interview-service\src\main\resources\db\migration\V1__foundation.sql =====
+CREATE TABLE service_metadata (id UUID PRIMARY KEY, service_name VARCHAR(100) NOT NULL, created_at TIMESTAMPTZ NOT NULL);
+
+
+===== FILE: services\notification-service\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\notification-service\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>notification-service</artifactId><dependencies>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency><dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency><dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.8.6</version></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency><dependency><groupId>org.springframework.kafka</groupId><artifactId>spring-kafka</artifactId></dependency></dependencies></project>
+
+===== FILE: services\notification-service\src\main\java\com\smartrecruit\notification\api\ApiExceptionHandler.java =====
+package com.smartrecruit.notification.api;import java.time.*;import java.util.*;import org.springframework.http.*;import org.springframework.security.access.AccessDeniedException;import org.springframework.web.bind.MethodArgumentNotValidException;import org.springframework.web.bind.annotation.*;@RestControllerAdvice public class ApiExceptionHandler{record ErrorBody(Instant timestamp,int status,String message){}@ExceptionHandler({IllegalArgumentException.class,IllegalStateException.class,MethodArgumentNotValidException.class})ResponseEntity<ErrorBody> bad(Exception e){return ResponseEntity.badRequest().body(new ErrorBody(Instant.now(),400,e.getMessage()));}@ExceptionHandler({SecurityException.class,AccessDeniedException.class})ResponseEntity<ErrorBody> forbidden(Exception e){return ResponseEntity.status(403).body(new ErrorBody(Instant.now(),403,"Access denied"));}@ExceptionHandler(NoSuchElementException.class)ResponseEntity<ErrorBody> missing(Exception e){return ResponseEntity.status(404).body(new ErrorBody(Instant.now(),404,"Resource not found"));}}
+
+===== FILE: services\notification-service\src\main\java\com\smartrecruit\notification\api\NotificationController.java =====
+package com.smartrecruit.notification.api;import com.smartrecruit.notification.domain.Notification;import com.smartrecruit.notification.repo.NotificationRepository;import java.time.*;import java.util.*;import org.springframework.data.domain.*;import org.springframework.security.core.annotation.AuthenticationPrincipal;import org.springframework.security.oauth2.jwt.Jwt;import org.springframework.transaction.annotation.Transactional;import org.springframework.web.bind.annotation.*;@RestController @RequestMapping("/api/v1/notifications")public class NotificationController{final NotificationRepository r;public NotificationController(NotificationRepository r){this.r=r;}UUID uid(Jwt j){return UUID.fromString(j.getClaimAsString("user_id"));}@GetMapping Page<Notification> list(@AuthenticationPrincipal Jwt j,@RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="20")int size){return r.findByRecipientUserIdAndDeletedAtIsNull(uid(j),PageRequest.of(page,Math.min(size,100),Sort.by("createdAt").descending()));}@PatchMapping("/{id}/read")@Transactional Notification read(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){var n=own(id,j);n.readAt=Instant.now();return n;}@PatchMapping("/{id}/unread")@Transactional Notification unread(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){var n=own(id,j);n.readAt=null;return n;}@DeleteMapping("/{id}")@Transactional void delete(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){own(id,j).deletedAt=Instant.now();}Notification own(UUID id,Jwt j){return r.findByIdAndRecipientUserIdAndDeletedAtIsNull(id,uid(j)).orElseThrow();}}
+
+===== FILE: services\notification-service\src\main\java\com\smartrecruit\notification\config\SecurityConfig.java =====
+package com.smartrecruit.notification.config;import javax.crypto.spec.SecretKeySpec;import java.nio.charset.StandardCharsets;import org.springframework.beans.factory.annotation.Value;import org.springframework.context.annotation.*;import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;import org.springframework.security.config.annotation.web.builders.HttpSecurity;import org.springframework.security.core.authority.SimpleGrantedAuthority;import org.springframework.security.oauth2.jwt.*;import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;import org.springframework.security.web.SecurityFilterChain;@Configuration @EnableMethodSecurity public class SecurityConfig{@Bean JwtDecoder d(@Value("${identity.jwt.secret}")String s,@Value("${identity.jwt.issuer}")String i){var d=NimbusJwtDecoder.withSecretKey(new SecretKeySpec(s.getBytes(StandardCharsets.UTF_8),"HmacSHA256")).build();d.setJwtValidator(JwtValidators.createDefaultWithIssuer(i));return d;}@Bean SecurityFilterChain c(HttpSecurity h)throws Exception{var c=new JwtAuthenticationConverter();c.setJwtGrantedAuthoritiesConverter(j->j.getClaimAsStringList("roles").stream().map(x->new SimpleGrantedAuthority("ROLE_"+x)).toList());return h.csrf(x->x.disable()).authorizeHttpRequests(a->a.requestMatchers("/swagger-ui/**","/v3/api-docs/**","/actuator/health").permitAll().anyRequest().authenticated()).oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(c))).build();}}
+
+===== FILE: services\notification-service\src\main\java\com\smartrecruit\notification\domain\Notification.java =====
+package com.smartrecruit.notification.domain;import jakarta.persistence.*;import java.time.*;import java.util.*;@Entity @Table(name="notifications")public class Notification{@Id public UUID id;public UUID recipientUserId,sourceEventId;public String type,title;@Column(columnDefinition="text")public String content;public Instant readAt,createdAt,deletedAt;@PrePersist void p(){id=id==null?UUID.randomUUID():id;createdAt=Instant.now();}}
+
+===== FILE: services\notification-service\src\main\java\com\smartrecruit\notification\events\RecruitmentEventConsumer.java =====
+package com.smartrecruit.notification.events;import com.fasterxml.jackson.databind.*;import com.smartrecruit.notification.domain.Notification;import com.smartrecruit.notification.repo.NotificationRepository;import java.util.*;import org.springframework.kafka.annotation.KafkaListener;import org.springframework.stereotype.Component;@Component public class RecruitmentEventConsumer{final NotificationRepository repo;final ObjectMapper json;public RecruitmentEventConsumer(NotificationRepository r,ObjectMapper j){repo=r;json=j;}@KafkaListener(topics="smartrecruit.recruitment.events",groupId="notification-service")public void consume(String raw){try{var x=json.readTree(raw);UUID event=UUID.fromString(x.get("eventId").asText());UUID recipient=UUID.fromString(x.get("recipientUserId").asText());if(repo.existsBySourceEventIdAndRecipientUserId(event,recipient))return;var n=new Notification();n.sourceEventId=event;n.recipientUserId=recipient;n.type=x.path("type").asText("RECRUITMENT");n.title=x.path("title").asText("Recruitment update");n.content=x.path("content").asText();repo.save(n);}catch(Exception e){throw new IllegalArgumentException("Invalid recruitment event",e);}}}
+
+===== FILE: services\notification-service\src\main\java\com\smartrecruit\notification\NotificationServiceApplication.java =====
+package com.smartrecruit.notification; import org.springframework.boot.*; import org.springframework.boot.autoconfigure.*; @SpringBootApplication public class NotificationServiceApplication{public static void main(String[]a){SpringApplication.run(NotificationServiceApplication.class,a);}}
+
+===== FILE: services\notification-service\src\main\java\com\smartrecruit\notification\repo\NotificationRepository.java =====
+package com.smartrecruit.notification.repo;import com.smartrecruit.notification.domain.Notification;import java.util.*;import org.springframework.data.domain.*;import org.springframework.data.jpa.repository.JpaRepository;public interface NotificationRepository extends JpaRepository<Notification,UUID>{Page<Notification> findByRecipientUserIdAndDeletedAtIsNull(UUID u,Pageable p);Optional<Notification> findByIdAndRecipientUserIdAndDeletedAtIsNull(UUID id,UUID u);boolean existsBySourceEventIdAndRecipientUserId(UUID e,UUID u);}
+
+===== FILE: services\notification-service\src\main\resources\application.yml =====
+server: {port: 8094}
+spring:
+ application.name: notification-service
+ datasource: {url: "${NOTIFICATION_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_notification}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+ jpa.hibernate.ddl-auto: validate
+ flyway.enabled: true
+ kafka.bootstrap-servers: "${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}"
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\notification-service\src\main\resources\db\migration\V1__foundation.sql =====
+CREATE TABLE notifications(id UUID PRIMARY KEY,recipient_user_id UUID NOT NULL,type VARCHAR(80) NOT NULL,title VARCHAR(200) NOT NULL,content TEXT NOT NULL,source_event_id UUID,read_at TIMESTAMPTZ,created_at TIMESTAMPTZ NOT NULL,deleted_at TIMESTAMPTZ);CREATE INDEX idx_notification_inbox ON notifications(recipient_user_id,created_at DESC) WHERE deleted_at IS NULL;CREATE UNIQUE INDEX uq_notification_event_recipient ON notifications(source_event_id,recipient_user_id) WHERE source_event_id IS NOT NULL;
+
+===== FILE: services\recruitment-service\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\recruitment-service\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>recruitment-service</artifactId><dependencies>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency><dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency><dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.8.6</version></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-redis</artifactId></dependency><dependency><groupId>org.springframework.kafka</groupId><artifactId>spring-kafka</artifactId></dependency></dependencies></project>
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\api\ApiExceptionHandler.java =====
+package com.smartrecruit.recruitment.api;import java.time.*;import java.util.*;import org.springframework.http.*;import org.springframework.security.access.AccessDeniedException;import org.springframework.web.bind.MethodArgumentNotValidException;import org.springframework.web.bind.annotation.*;@RestControllerAdvice public class ApiExceptionHandler{record ErrorBody(Instant timestamp,int status,String message){}@ExceptionHandler({IllegalArgumentException.class,IllegalStateException.class,MethodArgumentNotValidException.class})ResponseEntity<ErrorBody> bad(Exception e){return ResponseEntity.badRequest().body(new ErrorBody(Instant.now(),400,e.getMessage()));}@ExceptionHandler({SecurityException.class,AccessDeniedException.class})ResponseEntity<ErrorBody> forbidden(Exception e){return ResponseEntity.status(403).body(new ErrorBody(Instant.now(),403,"Access denied"));}@ExceptionHandler(NoSuchElementException.class)ResponseEntity<ErrorBody> missing(Exception e){return ResponseEntity.status(404).body(new ErrorBody(Instant.now(),404,"Resource not found"));}}
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\api\Controllers.java =====
+package com.smartrecruit.recruitment.api; import com.smartrecruit.recruitment.api.Dto.*;import com.smartrecruit.recruitment.domain.Entities.*;import com.smartrecruit.recruitment.service.RecruitmentService;import jakarta.validation.Valid;import java.util.*;import org.springframework.data.domain.Page;import org.springframework.security.access.prepost.PreAuthorize;import org.springframework.security.core.annotation.AuthenticationPrincipal;import org.springframework.security.oauth2.jwt.Jwt;import org.springframework.web.bind.annotation.*;
+public final class Controllers{private Controllers(){}static UUID uid(Jwt j){return UUID.fromString(j.getClaimAsString("user_id"));}
+ @RestController @RequestMapping("/api/v1/jobs") public static class PublicJobs{final RecruitmentService s;PublicJobs(RecruitmentService s){this.s=s;}@GetMapping Page<Job> all(@RequestParam(required=false)String q,@RequestParam(defaultValue="0")int page,@RequestParam(defaultValue="20")int size){return s.publicJobs(q,page,size);}@GetMapping("/{id}")Job one(@PathVariable UUID id){return s.publicJob(id);}}
+ @RestController @RequestMapping("/api/v1/recruiter") @PreAuthorize("hasRole('RECRUITER')") public static class Recruiter{final RecruitmentService s;Recruiter(RecruitmentService s){this.s=s;}@GetMapping("/businesses")List<Business>b(@AuthenticationPrincipal Jwt j){return s.myBusinesses(uid(j));}@PostMapping("/businesses")Business cb(@Valid@RequestBody BusinessRequest d,@AuthenticationPrincipal Jwt j){return s.createBusiness(d,uid(j));}@PostMapping("/jobs")Job cj(@Valid@RequestBody JobRequest d,@AuthenticationPrincipal Jwt j){return s.createJob(d,uid(j));}@PatchMapping("/jobs/{id}")Job uj(@PathVariable UUID id,@Valid@RequestBody JobRequest d,@AuthenticationPrincipal Jwt j){return s.updateJob(id,d,uid(j));}@PostMapping("/jobs/{id}/close")Job close(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){return s.transition(id,uid(j),JobStatus.CLOSED);}@PostMapping("/jobs/{id}/reopen")Job reopen(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){return s.transition(id,uid(j),JobStatus.PUBLISHED);}@DeleteMapping("/jobs/{id}")Job del(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){return s.transition(id,uid(j),JobStatus.DELETED);}@GetMapping("/applications")List<Application>a(@AuthenticationPrincipal Jwt j){return s.recruiterApps(uid(j));}@GetMapping("/applications/{id}")Application one(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){return s.application(id,uid(j),true);}@DeleteMapping("/applications/{id}")void delete(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){s.deleteApplication(id,uid(j));}@PatchMapping("/applications/{id}/status")Application as(@PathVariable UUID id,@Valid@RequestBody StatusRequest d,@AuthenticationPrincipal Jwt j){return s.updateStatus(id,d.status(),uid(j));}}
+ @RestController @RequestMapping("/api/v1") @PreAuthorize("hasRole('CANDIDATE')") public static class Candidate{final RecruitmentService s;Candidate(RecruitmentService s){this.s=s;}@PostMapping("/applications")Application apply(@Valid@RequestBody ApplicationRequest d,@AuthenticationPrincipal Jwt j){return s.apply(d,uid(j));}@GetMapping("/candidate/applications/{id}")Application one(@PathVariable UUID id,@AuthenticationPrincipal Jwt j){return s.application(id,uid(j),false);}@GetMapping("/candidate/applications")List<Application>mine(@AuthenticationPrincipal Jwt j){return s.candidateApps(uid(j));}}
+ @RestController @RequestMapping("/api/v1/admin/businesses") @PreAuthorize("hasRole('PLATFORM_ADMINISTRATOR')") public static class AdminBusinesses{final RecruitmentService s;AdminBusinesses(RecruitmentService s){this.s=s;}@GetMapping List<Business> all(){return s.allBusinesses();}@GetMapping("/{id}")Business one(@PathVariable UUID id){return s.business(id);}@PostMapping Business create(@Valid@RequestBody BusinessRequest d,@AuthenticationPrincipal Jwt j){return s.createBusiness(d,uid(j));}@PatchMapping("/{id}")Business update(@PathVariable UUID id,@Valid@RequestBody BusinessRequest d){return s.updateBusiness(id,d);}@DeleteMapping("/{id}")void delete(@PathVariable UUID id){s.deleteBusiness(id);}}
+}
+
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\api\Dto.java =====
+package com.smartrecruit.recruitment.api; import jakarta.validation.constraints.*; import java.util.*;
+public final class Dto{private Dto(){} public record BusinessRequest(@NotBlank String name,String description,String address){} public record JobRequest(@NotNull UUID businessId,@NotBlank String title,@NotBlank String description,@NotBlank String location,@NotBlank String contractType,String status){} public record ApplicationRequest(@NotNull UUID jobId,@NotNull UUID candidateCvId){} public record StatusRequest(@NotBlank String status){} }
+
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\config\SecurityConfig.java =====
+package com.smartrecruit.recruitment.config; import javax.crypto.spec.SecretKeySpec; import java.nio.charset.StandardCharsets; import org.springframework.beans.factory.annotation.Value; import org.springframework.context.annotation.*; import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity; import org.springframework.security.config.annotation.web.builders.HttpSecurity; import org.springframework.security.core.authority.SimpleGrantedAuthority; import org.springframework.security.oauth2.jwt.*; import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter; import org.springframework.security.web.SecurityFilterChain;
+@Configuration @EnableMethodSecurity public class SecurityConfig{@Bean JwtDecoder decoder(@Value("${identity.jwt.secret}")String s,@Value("${identity.jwt.issuer}")String i){var d=NimbusJwtDecoder.withSecretKey(new SecretKeySpec(s.getBytes(StandardCharsets.UTF_8),"HmacSHA256")).macAlgorithm(org.springframework.security.oauth2.jose.jws.MacAlgorithm.HS256).build();d.setJwtValidator(JwtValidators.createDefaultWithIssuer(i));return d;}@Bean SecurityFilterChain chain(HttpSecurity h)throws Exception{var c=new JwtAuthenticationConverter();c.setJwtGrantedAuthoritiesConverter(j->j.getClaimAsStringList("roles").stream().map(x->new SimpleGrantedAuthority("ROLE_"+x)).toList());return h.csrf(x->x.disable()).authorizeHttpRequests(a->a.requestMatchers("/api/v1/jobs/**","/swagger-ui/**","/v3/api-docs/**","/actuator/health").permitAll().anyRequest().authenticated()).oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(c))).build();}}
+
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\domain\Entities.java =====
+package com.smartrecruit.recruitment.domain; import jakarta.persistence.*; import java.time.*; import java.util.*;
+public final class Entities{private Entities(){} public enum BusinessStatus{ACTIVE,INACTIVE} public enum JobStatus{DRAFT,PUBLISHED,CLOSED,DELETED} public enum ApplicationStatus{PENDING,HIRED,REJECTED,UNAVAILABLE}
+ @MappedSuperclass static abstract class Base{@Id public UUID id;public Instant createdAt,updatedAt;@PrePersist void c(){id=id==null?UUID.randomUUID():id;createdAt=updatedAt=Instant.now();}@PreUpdate void u(){updatedAt=Instant.now();}}
+ @Entity @Table(name="businesses") public static class Business extends Base{public String name;@Column(columnDefinition="text")public String description;public String address;@Enumerated(EnumType.STRING)public BusinessStatus status;}
+ @Entity @Table(name="business_members",uniqueConstraints=@UniqueConstraint(columnNames={"business_id","user_id"})) public static class BusinessMember extends Base{public UUID businessId,userId;public String role;}
+ @Entity @Table(name="job_offers") public static class Job extends Base{public UUID businessId,createdByUserId;public String title;@Column(columnDefinition="text")public String description;public String location,contractType;@Enumerated(EnumType.STRING)public JobStatus status;}
+ @Entity @Table(name="applications",uniqueConstraints=@UniqueConstraint(columnNames={"job_id","candidate_id"})) public static class Application extends Base{public UUID jobId,candidateId,candidateCvId;@Enumerated(EnumType.STRING)public ApplicationStatus status;}
+ @Entity @Table(name="outbox_events") public static class Outbox extends Base{public UUID aggregateId;public String eventType;@Column(columnDefinition="text")public String payload;public Instant publishedAt;}
+}
+
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\events\OutboxPublisher.java =====
+package com.smartrecruit.recruitment.events;import com.fasterxml.jackson.databind.ObjectMapper;import com.smartrecruit.recruitment.repo.Repos.OutboxEvents;import java.time.*;import java.util.*;import org.springframework.kafka.core.KafkaTemplate;import org.springframework.scheduling.annotation.*;import org.springframework.stereotype.Component;import org.springframework.transaction.annotation.Transactional;@Component @EnableScheduling public class OutboxPublisher{final OutboxEvents repo;final KafkaTemplate<String,String> kafka;final ObjectMapper json;public OutboxPublisher(OutboxEvents r,KafkaTemplate<String,String> k,ObjectMapper j){repo=r;kafka=k;json=j;}@Scheduled(fixedDelayString="${outbox.delay-ms:1000}")@Transactional public void publish(){for(var e:repo.findTop100ByPublishedAtIsNullOrderByCreatedAt()){try{Map<String,Object> m=Map.of("eventId",e.id.toString(),"type",e.eventType,"aggregateId",e.aggregateId.toString(),"payload",e.payload);kafka.send("smartrecruit.recruitment.events",e.aggregateId.toString(),json.writeValueAsString(m)).get();e.publishedAt=Instant.now();}catch(Exception x){break;}}}}
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\RecruitmentApplication.java =====
+package com.smartrecruit.recruitment; import org.springframework.boot.*; import org.springframework.boot.autoconfigure.*; @SpringBootApplication public class RecruitmentApplication{public static void main(String[]a){SpringApplication.run(RecruitmentApplication.class,a);}}
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\repo\Repos.java =====
+package com.smartrecruit.recruitment.repo; import com.smartrecruit.recruitment.domain.Entities.*; import java.util.*; import org.springframework.data.domain.*; import org.springframework.data.jpa.repository.JpaRepository;
+public final class Repos{private Repos(){} public interface Businesses extends JpaRepository<Business,UUID>{} public interface Members extends JpaRepository<BusinessMember,UUID>{boolean existsByBusinessIdAndUserId(UUID b,UUID u);List<BusinessMember> findByUserId(UUID u);} public interface Jobs extends JpaRepository<Job,UUID>{Page<Job> findByStatusAndTitleContainingIgnoreCase(JobStatus s,String q,Pageable p);List<Job> findByCreatedByUserId(UUID u);} public interface Applications extends JpaRepository<Application,UUID>{boolean existsByJobIdAndCandidateId(UUID j,UUID c);List<Application> findByCandidateId(UUID c);List<Application> findByJobId(UUID j);} public interface OutboxEvents extends JpaRepository<Outbox,UUID>{List<Outbox> findTop100ByPublishedAtIsNullOrderByCreatedAt();}}
+
+
+===== FILE: services\recruitment-service\src\main\java\com\smartrecruit\recruitment\service\RecruitmentService.java =====
+package com.smartrecruit.recruitment.service;
+import com.smartrecruit.recruitment.api.Dto.*;import com.smartrecruit.recruitment.domain.Entities.*;import com.smartrecruit.recruitment.repo.Repos.*;import java.util.*;import org.springframework.data.domain.*;import org.springframework.stereotype.Service;import org.springframework.transaction.annotation.Transactional;
+@Service public class RecruitmentService{final Businesses businesses;final Members members;final Jobs jobs;final Applications apps;final OutboxEvents outbox;public RecruitmentService(Businesses b,Members m,Jobs j,Applications a,OutboxEvents o){businesses=b;members=m;jobs=j;apps=a;outbox=o;}
+ public Page<Job> publicJobs(String q,int page,int size){return jobs.findByStatusAndTitleContainingIgnoreCase(JobStatus.PUBLISHED,q==null?"":q,PageRequest.of(page,Math.min(size,100),Sort.by("createdAt").descending()));} public Job publicJob(UUID id){var j=jobs.findById(id).orElseThrow();if(j.status!=JobStatus.PUBLISHED&&j.status!=JobStatus.CLOSED)throw new NoSuchElementException();return j;}
+ @Transactional public Business createBusiness(BusinessRequest d,UUID user){var b=new Business();b.name=d.name();b.description=d.description();b.address=d.address();b.status=BusinessStatus.ACTIVE;b=businesses.save(b);var m=new BusinessMember();m.businessId=b.id;m.userId=user;m.role="OWNER";members.save(m);return b;} public List<Business> allBusinesses(){return businesses.findAll();} public Business business(UUID id){return businesses.findById(id).orElseThrow();} @Transactional public Business updateBusiness(UUID id,BusinessRequest d){var b=business(id);b.name=d.name();b.description=d.description();b.address=d.address();return b;} @Transactional public void deleteBusiness(UUID id){businesses.delete(business(id));} public List<Business> myBusinesses(UUID u){return members.findByUserId(u).stream().map(m->businesses.findById(m.businessId).orElseThrow()).toList();}
+ @Transactional public Job createJob(JobRequest d,UUID u){owned(d.businessId(),u);var j=new Job();j.businessId=d.businessId();j.createdByUserId=u;j.title=d.title();j.description=d.description();j.location=d.location();j.contractType=d.contractType();j.status=d.status()==null?JobStatus.DRAFT:JobStatus.valueOf(d.status());j=jobs.save(j);event("JobCreated",j.id,"{"jobId":""+j.id+""}");return j;} @Transactional public Job updateJob(UUID id,JobRequest d,UUID u){var j=job(id,u);j.title=d.title();j.description=d.description();j.location=d.location();j.contractType=d.contractType();return j;} @Transactional public Job transition(UUID id,UUID u,JobStatus s){var j=job(id,u);j.status=s;if(s==JobStatus.DELETED)apps.findByJobId(id).forEach(a->a.status=ApplicationStatus.UNAVAILABLE);event("Job"+s.name(),id,"{}");return j;}
+ @Transactional public Application apply(ApplicationRequest d,UUID c){var j=jobs.findById(d.jobId()).orElseThrow();if(j.status!=JobStatus.PUBLISHED)throw new IllegalStateException("Offer is not open");if(apps.existsByJobIdAndCandidateId(j.id,c))throw new IllegalStateException("Already applied");var a=new Application();a.jobId=j.id;a.candidateId=c;a.candidateCvId=d.candidateCvId();a.status=ApplicationStatus.PENDING;a=apps.save(a);event("ApplicationSubmitted",a.id,"{"candidateId":""+c+""}");return a;} public Application application(UUID id,UUID u,boolean recruiter){var a=apps.findById(id).orElseThrow();if(recruiter)job(a.jobId,u);else if(!a.candidateId.equals(u))throw new SecurityException("Application access denied");return a;} @Transactional public void deleteApplication(UUID id,UUID u){var a=application(id,u,true);apps.delete(a);event("ApplicationDeleted",id,"{}");} public List<Application> candidateApps(UUID c){return apps.findByCandidateId(c);} public List<Application> recruiterApps(UUID u){return jobs.findByCreatedByUserId(u).stream().flatMap(j->apps.findByJobId(j.id).stream()).toList();} @Transactional public Application updateStatus(UUID id,String status,UUID u){var a=apps.findById(id).orElseThrow();job(a.jobId,u);a.status=ApplicationStatus.valueOf(status);event("ApplicationStatusChanged",a.id,"{"status":""+status+""}");return a;}
+ void owned(UUID b,UUID u){if(!members.existsByBusinessIdAndUserId(b,u))throw new SecurityException("Business access denied");}Job job(UUID id,UUID u){var j=jobs.findById(id).orElseThrow();owned(j.businessId,u);return j;}void event(String t,UUID id,String p){var e=new Outbox();e.aggregateId=id;e.eventType=t;e.payload=p;outbox.save(e);}}
+
+
+===== FILE: services\recruitment-service\src\main\resources\application.yml =====
+server: {port: 8090}
+spring:
+ application.name: recruitment-service
+ datasource: {url: "${RECRUITMENT_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_recruitment}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+ jpa: {open-in-view: false, hibernate.ddl-auto: validate}
+ flyway.enabled: true
+ kafka.bootstrap-servers: "${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}"
+ data.redis.host: "${REDIS_HOST:localhost}"
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\recruitment-service\src\main\resources\db\migration\V1__recruitment.sql =====
+CREATE TABLE businesses(id UUID PRIMARY KEY,name VARCHAR(200) NOT NULL,description TEXT,address VARCHAR(255),status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE business_members(id UUID PRIMARY KEY,business_id UUID NOT NULL REFERENCES businesses(id),user_id UUID NOT NULL,role VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL,UNIQUE(business_id,user_id));
+CREATE TABLE job_offers(id UUID PRIMARY KEY,business_id UUID NOT NULL REFERENCES businesses(id),created_by_user_id UUID NOT NULL,title VARCHAR(200) NOT NULL,description TEXT NOT NULL,location VARCHAR(150) NOT NULL,contract_type VARCHAR(80) NOT NULL,status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE applications(id UUID PRIMARY KEY,job_id UUID NOT NULL REFERENCES job_offers(id),candidate_id UUID NOT NULL,candidate_cv_id UUID NOT NULL,status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL,UNIQUE(job_id,candidate_id));
+CREATE TABLE outbox_events(id UUID PRIMARY KEY,aggregate_id UUID NOT NULL,event_type VARCHAR(100) NOT NULL,payload TEXT NOT NULL,published_at TIMESTAMPTZ,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE INDEX idx_job_public ON job_offers(status,created_at DESC);CREATE INDEX idx_app_candidate ON applications(candidate_id);CREATE INDEX idx_outbox_unpublished ON outbox_events(published_at) WHERE published_at IS NULL;
+
+
+===== FILE: services\recruitment-service\src\test\java\com\smartrecruit\recruitment\RecruitmentApplicationTest.java =====
+package com.smartrecruit.recruitment;import org.junit.jupiter.api.Test;import org.springframework.boot.test.context.SpringBootTest;@SpringBootTest(properties={"spring.flyway.enabled=false","spring.jpa.hibernate.ddl-auto=none","spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration","identity.jwt.secret=01234567890123456789012345678901"})class RecruitmentApplicationTest{@Test void contextLoads(){}}
+
+===== FILE: services\recruitment-service\target\classes\application.yml =====
+server: {port: 8090}
+spring:
+ application.name: recruitment-service
+ datasource: {url: "${RECRUITMENT_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_recruitment}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+ jpa: {open-in-view: false, hibernate.ddl-auto: validate}
+ flyway.enabled: true
+ kafka.bootstrap-servers: "${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}"
+ data.redis.host: "${REDIS_HOST:localhost}"
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\recruitment-service\target\classes\db\migration\V1__recruitment.sql =====
+CREATE TABLE businesses(id UUID PRIMARY KEY,name VARCHAR(200) NOT NULL,description TEXT,address VARCHAR(255),status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE business_members(id UUID PRIMARY KEY,business_id UUID NOT NULL REFERENCES businesses(id),user_id UUID NOT NULL,role VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL,UNIQUE(business_id,user_id));
+CREATE TABLE job_offers(id UUID PRIMARY KEY,business_id UUID NOT NULL REFERENCES businesses(id),created_by_user_id UUID NOT NULL,title VARCHAR(200) NOT NULL,description TEXT NOT NULL,location VARCHAR(150) NOT NULL,contract_type VARCHAR(80) NOT NULL,status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE TABLE applications(id UUID PRIMARY KEY,job_id UUID NOT NULL REFERENCES job_offers(id),candidate_id UUID NOT NULL,candidate_cv_id UUID NOT NULL,status VARCHAR(30) NOT NULL,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL,UNIQUE(job_id,candidate_id));
+CREATE TABLE outbox_events(id UUID PRIMARY KEY,aggregate_id UUID NOT NULL,event_type VARCHAR(100) NOT NULL,payload TEXT NOT NULL,published_at TIMESTAMPTZ,created_at TIMESTAMPTZ NOT NULL,updated_at TIMESTAMPTZ NOT NULL);
+CREATE INDEX idx_job_public ON job_offers(status,created_at DESC);CREATE INDEX idx_app_candidate ON applications(candidate_id);CREATE INDEX idx_outbox_unpublished ON outbox_events(published_at) WHERE published_at IS NULL;
+
+
+===== FILE: services\recruitment-service\target\maven-status\maven-compiler-plugin\compile\default-compile\createdFiles.lst =====
+
+
+===== FILE: services\recruitment-service\target\maven-status\maven-compiler-plugin\compile\default-compile\inputFiles.lst =====
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\config\SecurityConfig.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\api\Controllers.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\domain\Entities.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\api\Dto.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\RecruitmentApplication.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\events\OutboxPublisher.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\service\RecruitmentService.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\api\ApiExceptionHandler.java
+C:\Users\boufa\OneDrive - Ministere de l'Enseignement Superieur et de la Recherche Scientifique\Bureau\SmartRecruit---server-master\services\recruitment-service\src\main\java\com\smartrecruit\recruitment\repo\Repos.java
+
+
+===== FILE: services\subscription-service\Dockerfile =====
+FROM eclipse-temurin:21-jre
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+ENTRYPOINT ["java","-jar","/app.jar"]
+
+
+===== FILE: services\subscription-service\pom.xml =====
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><parent><groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version></parent><artifactId>subscription-service</artifactId><dependencies>
+<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-validation</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-oauth2-resource-server</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-core</artifactId></dependency><dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency><dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><scope>runtime</scope></dependency><dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>2.8.6</version></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-actuator</artifactId></dependency><dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency></dependencies></project>
+
+===== FILE: services\subscription-service\src\main\java\com\smartrecruit\subscription\SubscriptionServiceApplication.java =====
+package com.smartrecruit.subscription; import org.springframework.boot.*; import org.springframework.boot.autoconfigure.*; @SpringBootApplication public class SubscriptionServiceApplication{public static void main(String[]a){SpringApplication.run(SubscriptionServiceApplication.class,a);}}
+
+===== FILE: services\subscription-service\src\main\resources\application.yml =====
+server: {port: 8092}
+spring:
+ application.name: subscription-service
+ datasource: {url: "${SUBSCRIPTION_SERVICE_DB_URL:jdbc:postgresql://localhost:5432/smartrecruit_subscription}", username: "${POSTGRES_USER:smartrecruit}", password: "${POSTGRES_PASSWORD:smartrecruit}"}
+ jpa.hibernate.ddl-auto: validate
+ flyway.enabled: true
+identity.jwt: {secret: "${IDENTITY_JWT_SECRET}", issuer: "${IDENTITY_JWT_ISSUER:smartrecruit-identity}"}
+management.endpoints.web.exposure.include: health,info,metrics
+
+
+===== FILE: services\subscription-service\src\main\resources\db\migration\V1__foundation.sql =====
+CREATE TABLE service_metadata (id UUID PRIMARY KEY, service_name VARCHAR(100) NOT NULL, created_at TIMESTAMPTZ NOT NULL);
+
+

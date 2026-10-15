@@ -1,0 +1,7 @@
+CREATE DATABASE smartrecruit_identity;
+CREATE DATABASE smartrecruit_recruitment;
+CREATE DATABASE smartrecruit_candidate;
+CREATE DATABASE smartrecruit_subscription;
+CREATE DATABASE smartrecruit_interview;
+CREATE DATABASE smartrecruit_notification;
+CREATE DATABASE smartrecruit_analytics;

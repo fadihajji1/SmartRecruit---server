@@ -1,0 +1,9 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>3.2.0</version><relativePath/></parent>
+  <groupId>com.smartrecruit</groupId><artifactId>smartrecruit-parent</artifactId><version>0.0.1-SNAPSHOT</version><packaging>pom</packaging>
+  <properties><java.version>17</java.version><spring-cloud.version>2023.0.0</spring-cloud.version><springdoc.version>2.3.0</springdoc.version></properties>
+  <modules><module>discovery-server</module><module>api-gateway</module><module>identity-service</module><module>recruitment-service</module><module>candidate-ai-service</module><module>subscription-service</module><module>interview-service</module><module>notification-service</module><module>analytics-service</module></modules>
+  <dependencyManagement><dependencies><dependency><groupId>org.springframework.cloud</groupId><artifactId>spring-cloud-dependencies</artifactId><version>${spring-cloud.version}</version><type>pom</type><scope>import</scope></dependency></dependencies></dependencyManagement>
+  <build><pluginManagement><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></pluginManagement></build>
+</project>

@@ -1,0 +1,1 @@
+CREATE TABLE notifications(id UUID PRIMARY KEY,recipient_user_id UUID NOT NULL,source_event_id UUID,type VARCHAR(80),title VARCHAR(200),content TEXT,read_at TIMESTAMPTZ,created_at TIMESTAMPTZ NOT NULL,deleted_at TIMESTAMPTZ);

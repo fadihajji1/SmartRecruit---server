@@ -1,0 +1,1 @@
+CREATE TABLE subscriptions(id UUID PRIMARY KEY,owner_id UUID NOT NULL,plan_code VARCHAR(80) NOT NULL,status VARCHAR(30) NOT NULL,starts_at TIMESTAMPTZ,ends_at TIMESTAMPTZ);
