@@ -1,150 +1,109 @@
 name: smartrecruit
 
+x-postgres-common: &postgres-common
+  image: postgres:17-alpine
+  restart: unless-stopped
+  environment: &postgres-environment
+    POSTGRES_USER: smartrecruit
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+  healthcheck:
+    test:
+      - CMD-SHELL
+      - pg_isready -U smartrecruit -d "$$POSTGRES_DB"
+    interval: 10s
+    timeout: 5s
+    retries: 10
+    start_period: 10s
+
 services:
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin
+    container_name: smartrecruit-pgadmin
+    restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@admin.com
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?Set PGADMIN_DEFAULT_EMAIL in .env}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in .env}
     ports:
       - "5050:80"
     volumes:
-      - pgadmin-data:/var/lib/pgadmin
-
+      - pgadmin_data:/var/lib/pgadmin
 
   identity-db:
-    image: postgres:17-alpine
+    <<: *postgres-common
     container_name: smartrecruit-identity-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartrecruit_identity
-      POSTGRES_USER: smartrecruit
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      <<: *postgres-environment
+      POSTGRES_DB: identity_db
     ports:
       - "5433:5432"
     volumes:
       - identity_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartrecruit -d smartrecruit_identity"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   recruitment-db:
-    image: postgres:17-alpine
+    <<: *postgres-common
     container_name: smartrecruit-recruitment-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartrecruit_recruitment
-      POSTGRES_USER: smartrecruit
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      <<: *postgres-environment
+      POSTGRES_DB: recruitment_db
     ports:
       - "5434:5432"
     volumes:
       - recruitment_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartrecruit -d smartrecruit_recruitment"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   candidate-db:
-    image: postgres:17-alpine
+    <<: *postgres-common
     container_name: smartrecruit-candidate-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartrecruit_candidate
-      POSTGRES_USER: smartrecruit
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      <<: *postgres-environment
+      POSTGRES_DB: candidate_db
     ports:
       - "5435:5432"
     volumes:
       - candidate_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartrecruit -d smartrecruit_candidate"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   subscription-db:
-    image: postgres:17-alpine
+    <<: *postgres-common
     container_name: smartrecruit-subscription-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartrecruit_subscription
-      POSTGRES_USER: smartrecruit
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      <<: *postgres-environment
+      POSTGRES_DB: subscription_db
     ports:
       - "5436:5432"
     volumes:
       - subscription_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartrecruit -d smartrecruit_subscription"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   interview-db:
-    image: postgres:17-alpine
+    <<: *postgres-common
     container_name: smartrecruit-interview-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartrecruit_interview
-      POSTGRES_USER: smartrecruit
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      <<: *postgres-environment
+      POSTGRES_DB: interview_db
     ports:
       - "5437:5432"
     volumes:
       - interview_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartrecruit -d smartrecruit_interview"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   notification-db:
-    image: postgres:17-alpine
+    <<: *postgres-common
     container_name: smartrecruit-notification-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartrecruit_notification
-      POSTGRES_USER: smartrecruit
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      <<: *postgres-environment
+      POSTGRES_DB: notification_db
     ports:
       - "5438:5432"
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartrecruit -d smartrecruit_notification"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   analytics-db:
-    image: postgres:17-alpine
+    <<: *postgres-common
     container_name: smartrecruit-analytics-postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: smartrecruit_analytics
-      POSTGRES_USER: smartrecruit
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      <<: *postgres-environment
+      POSTGRES_DB: analytics_db
     ports:
       - "5439:5432"
     volumes:
       - analytics_postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartrecruit -d smartrecruit_analytics"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
   redis:
     image: redis:7-alpine
@@ -190,9 +149,9 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
-      KAFKA_LOG_DIRS: /tmp/kraft-combined-logs
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
     volumes:
-      - kafka_data:/tmp/kraft-combined-logs
+      - kafka_data:/var/lib/kafka/data
     healthcheck:
       test:
         - CMD-SHELL
@@ -217,7 +176,7 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:19092
 
   minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    image: dappros/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: smartrecruit-minio
     restart: unless-stopped
     command: server /data --console-address ":9001"
@@ -230,8 +189,69 @@ services:
     volumes:
       - minio_data:/data
 
+  identity-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/identity-service
+        APP_JAR: identity-service
+    container_name: smartrecruit-identity-service
+    restart: unless-stopped
+    environment:
+      IDENTITY_SERVICE_PORT: 8082
+      IDENTITY_DB_URL: jdbc:postgresql://identity-db:5432/identity_db
+      IDENTITY_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@admin.com}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      MINIO_BUCKET: ${MINIO_BUCKET:-smartrecruit-private}
+    ports:
+      - "8082:8082"
+    depends_on:
+      identity-db:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/api-gateway
+        APP_JAR: api-gateway
+    container_name: smartrecruit-api-gateway
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      IDENTITY_SERVICE_URL: http://identity-service:8082
+      RECRUITMENT_SERVICE_URL: http://recruitment-service:8080
+      CANDIDATE_AI_SERVICE_URL: http://candidate-ai-service:8080
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:8080
+      INTERVIEW_SERVICE_URL: http://interview-service:8080
+      NOTIFICATION_SERVICE_URL: http://notification-service:8080
+      ANALYTICS_SERVICE_URL: http://analytics-service:8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      - identity-service
+
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
 volumes:
-  pgadmin-data:
+  pgadmin_data:
   identity_postgres_data:
   recruitment_postgres_data:
   candidate_postgres_data:
