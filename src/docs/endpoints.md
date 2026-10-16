@@ -44,9 +44,10 @@ Swagger UI is the primary development tool for manually testing REST endpoints b
 POST /api/v1/auth/register/candidate
 POST /api/v1/auth/register/recruiter
 POST /api/v1/auth/login
+POST /api/v1/auth/logout
 ```
 
-Recruiter registration accepts employment-proof metadata/file upload according to the implementation contract. Recruiter accounts remain pending until administrator approval.
+Recruiter registration is `multipart/form-data` and requires an `employmentProof` file (maximum 10 MB). The service stores the file privately in MinIO; the user record retains its object key. Recruiter accounts remain pending until administrator approval.
 
 ### Candidate
 ```text
@@ -67,26 +68,37 @@ GET   /api/v1/admin/users/{userId}
 PATCH /api/v1/admin/users/{userId}
 POST  /api/v1/admin/recruiters/{userId}/approve
 POST  /api/v1/admin/recruiters/{userId}/reject
+GET   /api/v1/admin/recruiters/{userId}/employment-proof
 ```
+
+The employment-proof endpoint returns a short-lived (5 minute) presigned URL and is administrator-only. User responses omit password hashes.
 
 ## 4. Recruitment Service
 
 ### Public
 ```text
-GET /api/v1/jobs
+GET /api/v1/jobs?q=&location=&contractType=&page=&size=
 GET /api/v1/jobs/{jobId}
 ```
 
 ### Recruiter
 ```text
 GET    /api/v1/recruiter/businesses
+POST   /api/v1/recruiter/businesses
 GET    /api/v1/recruiter/businesses/{businessId}
 PATCH  /api/v1/recruiter/businesses/{businessId}
+DELETE /api/v1/recruiter/businesses/{businessId}
+GET    /api/v1/admin/businesses
+POST   /api/v1/admin/businesses
+GET    /api/v1/admin/businesses/{businessId}
+PATCH  /api/v1/admin/businesses/{businessId}
+DELETE /api/v1/admin/businesses/{businessId}
 GET    /api/v1/recruiter/jobs
 POST   /api/v1/recruiter/jobs
 GET    /api/v1/recruiter/jobs/{jobId}
 PATCH  /api/v1/recruiter/jobs/{jobId}
 POST   /api/v1/recruiter/jobs/{jobId}/close
+POST   /api/v1/recruiter/jobs/{jobId}/publish
 POST   /api/v1/recruiter/jobs/{jobId}/reopen
 DELETE /api/v1/recruiter/jobs/{jobId}
 GET    /api/v1/recruiter/applications
@@ -107,12 +119,13 @@ GET  /api/v1/candidate/applications/{applicationId}
 GET    /api/v1/candidate/cvs
 POST   /api/v1/candidate/cvs
 GET    /api/v1/candidate/cvs/{cvId}
+GET    /api/v1/candidate/cvs/{cvId}/download
 DELETE /api/v1/candidate/cvs/{cvId}
 POST   /api/v1/candidate/cvs/{cvId}/ats-scan
 GET    /api/v1/candidate/recommendations
 ```
 
-CV upload is handled by the service and stored in MinIO. Private files are never exposed as public object URLs.
+CV upload accepts PDF, DOC or DOCX files up to 10 MB, validates the file signature, and stores the object in MinIO. Download returns a short-lived signed URL to the owning candidate. Private objects are never public.
 
 ## 6. Subscription Service
 
@@ -186,6 +199,8 @@ DELETE /api/v1/notifications/{notificationId}
 ```
 
 The Notification Service is event-driven internally. It consumes relevant Kafka events and creates notification records, then can deliver through in-app, email or outbound webhook mechanisms.
+
+Recruitment events are written to a database outbox in the same transaction as an application/status change, published to Kafka, then persisted idempotently by the Notification Service. Each notification endpoint is scoped to the JWT subject user ID.
 
 ## 9. Analytics Service
 

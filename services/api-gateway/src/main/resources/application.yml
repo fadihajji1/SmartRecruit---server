@@ -11,16 +11,16 @@ spring:
       routes:
         - id: identity
           uri: lb://identity-service
-          predicates: [Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/admin/users/**,/api/v1/admin/recruiters/**]
+          predicates: [Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/recruiters/**,/api/v1/admin/users/**,/api/v1/admin/recruiters/**]
         - id: recruitment
           uri: lb://recruitment-service
           predicates: [Path=/api/v1/jobs/**,/api/v1/applications/**,/api/v1/recruiter/**,/api/v1/candidate/applications/**,/api/v1/admin/businesses/**]
         - id: candidate-ai
           uri: lb://candidate-ai-service
-          predicates: [Path=/api/v1/candidate/cvs/**,/api/v1/candidate/recommendations/**]
+          predicates: [Path=/api/v1/candidate/cvs/**]
         - id: subscription
           uri: lb://subscription-service
-          predicates: [Path=/api/v1/subscriptions/**,/api/v1/candidate/subscription/**,/api/v1/recruiter/subscription/**,/api/v1/admin/subscription/**]
+          predicates: [Path=/api/v1/subscriptions/**]
         - id: interview
           uri: lb://interview-service
           predicates: [Path=/api/v1/recruiter/interviews/**,/api/v1/candidate/interviews/**]
@@ -36,5 +36,5 @@ eureka:
       defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
 identity:
   jwt:
-    secret: ${IDENTITY_JWT_SECRET:01234567890123456789012345678901}
+    secret: ${IDENTITY_JWT_SECRET}
     issuer: ${IDENTITY_JWT_ISSUER:smartrecruit-identity}

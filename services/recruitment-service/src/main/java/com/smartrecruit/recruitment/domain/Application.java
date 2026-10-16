@@ -9,6 +9,7 @@ import java.util.UUID;
 )) public class Application {
  @Id public UUID id;
 public UUID jobId,candidateId,candidateCvId;
+@Column(columnDefinition="text") public String message;
 @Enumerated(EnumType.STRING)public Status status;
 public Instant createdAt,updatedAt;
 public enum Status{

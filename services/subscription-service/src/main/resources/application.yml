@@ -15,7 +15,7 @@ spring:
     enabled: true
 identity:
   jwt:
-    secret: ${IDENTITY_JWT_SECRET:01234567890123456789012345678901}
+    secret: ${IDENTITY_JWT_SECRET}
     issuer: ${IDENTITY_JWT_ISSUER:smartrecruit-identity}
 management:
   endpoints:

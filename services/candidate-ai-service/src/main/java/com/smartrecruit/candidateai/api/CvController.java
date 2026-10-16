@@ -21,11 +21,17 @@ return UUID.fromString(jwt.getClaimAsString("user_id"));
 @GetMapping public List<CandidateCv> list(@AuthenticationPrincipal Jwt jwt){
 return service.list(id(jwt));
 }
+@GetMapping("/{cvId}") public CandidateCv get(@PathVariable UUID cvId,@AuthenticationPrincipal Jwt jwt){
+return service.get(cvId,id(jwt));
+}
 @PostMapping(consumes=MediaType.MULTIPART_FORM_DATA_VALUE)@ResponseStatus(HttpStatus.CREATED)public CandidateCv upload(@RequestPart("file")MultipartFile file,@AuthenticationPrincipal Jwt jwt){
 return service.upload(id(jwt),file);
 }
 @DeleteMapping("/{cvId}")@ResponseStatus(HttpStatus.NO_CONTENT)public void delete(@PathVariable UUID cvId,@AuthenticationPrincipal Jwt jwt){
 service.delete(cvId,id(jwt));
+}
+@GetMapping("/{cvId}/download") public java.util.Map<String,String> download(@PathVariable UUID cvId,@AuthenticationPrincipal Jwt jwt){
+return java.util.Map.of("url",service.downloadUrl(cvId,id(jwt)));
 }
 }
 

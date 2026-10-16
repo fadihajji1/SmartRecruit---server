@@ -10,6 +10,7 @@ import jakarta.persistence.*;
  @Column(nullable=false) public String passwordHash;
  @Column(nullable=false) public String fullName;
  public String phone,address,city,country;
+ public String employmentProofObjectKey;
  @Enumerated(EnumType.STRING) public Role role;
  @Enumerated(EnumType.STRING) public Status status;
  public Instant createdAt,updatedAt;
