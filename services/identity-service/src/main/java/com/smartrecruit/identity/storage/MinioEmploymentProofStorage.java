@@ -13,6 +13,7 @@ import com.smartrecruit.identity.config.MinioProperties;
 import com.smartrecruit.identity.exception.StorageException;
 
 import io.minio.BucketExistsArgs;
+import io.minio.GetObjectArgs;
 import io.minio.MakeBucketArgs;
 import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
@@ -100,6 +101,26 @@ public class MinioEmploymentProofStorage implements EmploymentProofStorage {
 			}
 		}
 		return true;
+	}
+
+	@Override
+	public StoredEmploymentProof retrieve(String objectKey) {
+		String extension = objectKey.substring(objectKey.lastIndexOf('.') + 1);
+		String contentType = switch (extension) {
+			case "pdf" -> "application/pdf";
+			case "jpg" -> "image/jpeg";
+			case "png" -> "image/png";
+			default -> throw new IllegalArgumentException("Unsupported employment proof file type");
+		};
+		try (var input = minio.getObject(GetObjectArgs.builder()
+				.bucket(properties.bucket())
+				.object(objectKey)
+				.build())) {
+			return new StoredEmploymentProof(input.readAllBytes(), contentType,
+				objectKey.substring(objectKey.lastIndexOf('/') + 1));
+		} catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException exception) {
+			throw new StorageException("Unable to retrieve employment proof", exception);
+		}
 	}
 
 	@Override

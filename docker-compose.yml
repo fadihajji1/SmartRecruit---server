@@ -24,7 +24,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?Set PGADMIN_DEFAULT_EMAIL in .env}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in .env}
     ports:
-      - "5050:80"
+      - "${PGADMIN_PORT:-5050}:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
@@ -35,7 +35,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: identity_db
     ports:
-      - "5433:5432"
+      - "${IDENTITY_DB_PORT:-5433}:5432"
     volumes:
       - identity_postgres_data:/var/lib/postgresql/data
 
@@ -46,7 +46,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: recruitment_db
     ports:
-      - "5434:5432"
+      - "${RECRUITMENT_DB_PORT:-5434}:5432"
     volumes:
       - recruitment_postgres_data:/var/lib/postgresql/data
 
@@ -57,7 +57,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: candidate_db
     ports:
-      - "5435:5432"
+      - "${CANDIDATE_DB_PORT:-5435}:5432"
     volumes:
       - candidate_postgres_data:/var/lib/postgresql/data
 
@@ -68,7 +68,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: subscription_db
     ports:
-      - "5436:5432"
+      - "${SUBSCRIPTION_DB_PORT:-5436}:5432"
     volumes:
       - subscription_postgres_data:/var/lib/postgresql/data
 
@@ -79,7 +79,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: interview_db
     ports:
-      - "5437:5432"
+      - "${INTERVIEW_DB_PORT:-5437}:5432"
     volumes:
       - interview_postgres_data:/var/lib/postgresql/data
 
@@ -90,7 +90,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: notification_db
     ports:
-      - "5438:5432"
+      - "${NOTIFICATION_DB_PORT:-5438}:5432"
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data
 
@@ -101,7 +101,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: analytics_db
     ports:
-      - "5439:5432"
+      - "${ANALYTICS_DB_PORT:-5439}:5432"
     volumes:
       - analytics_postgres_data:/var/lib/postgresql/data
 
@@ -116,7 +116,7 @@ services:
       - -c
       - redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
     ports:
-      - "6380:6379"
+      - "${REDIS_PORT:-6380}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -133,13 +133,13 @@ services:
     hostname: kafka
     restart: unless-stopped
     ports:
-      - "9093:9092"
+      - "${KAFKA_PORT:-9093}:9092"
     environment:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:19093,PLAINTEXT_HOST://:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9093}
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:19093
@@ -169,7 +169,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8081:8080"
+      - "${KAFKA_UI_PORT:-8081}:8080"
     environment:
       DYNAMIC_CONFIG_ENABLED: "true"
       KAFKA_CLUSTERS_0_NAME: smartrecruit-local
@@ -184,8 +184,8 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     ports:
-      - "9002:9000"
-      - "9003:9001"
+      - "${MINIO_API_PORT:-9002}:9000"
+      - "${MINIO_CONSOLE_PORT:-9003}:9001"
     volumes:
       - minio_data:/data
 
@@ -199,7 +199,7 @@ services:
     container_name: smartrecruit-identity-service
     restart: unless-stopped
     environment:
-      IDENTITY_SERVICE_PORT: 8082
+      IDENTITY_SERVICE_PORT: ${IDENTITY_SERVICE_PORT:-8082}
       IDENTITY_DB_URL: jdbc:postgresql://identity-db:5432/identity_db
       IDENTITY_DB_USERNAME: smartrecruit
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
@@ -212,7 +212,7 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
       MINIO_BUCKET: ${MINIO_BUCKET:-smartrecruit-private}
     ports:
-      - "8082:8082"
+      - "${IDENTITY_SERVICE_PORT:-8082}:${IDENTITY_SERVICE_PORT:-8082}"
     depends_on:
       identity-db:
         condition: service_healthy
@@ -229,18 +229,18 @@ services:
     container_name: smartrecruit-api-gateway
     restart: unless-stopped
     environment:
-      SERVER_PORT: 8080
+      SERVER_PORT: ${API_GATEWAY_PORT:-8080}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
-      IDENTITY_SERVICE_URL: http://identity-service:8082
-      RECRUITMENT_SERVICE_URL: http://recruitment-service:8080
-      CANDIDATE_AI_SERVICE_URL: http://candidate-ai-service:8080
-      SUBSCRIPTION_SERVICE_URL: http://subscription-service:8080
-      INTERVIEW_SERVICE_URL: http://interview-service:8080
-      NOTIFICATION_SERVICE_URL: http://notification-service:8080
-      ANALYTICS_SERVICE_URL: http://analytics-service:8080
+      IDENTITY_SERVICE_URL: http://identity-service:${IDENTITY_SERVICE_PORT:-8082}
+      RECRUITMENT_SERVICE_URL: http://recruitment-service:${RECRUITMENT_SERVICE_PORT:-8080}
+      CANDIDATE_AI_SERVICE_URL: http://candidate-ai-service:${CANDIDATE_AI_SERVICE_PORT:-8080}
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:${SUBSCRIPTION_SERVICE_PORT:-8080}
+      INTERVIEW_SERVICE_URL: http://interview-service:${INTERVIEW_SERVICE_PORT:-8080}
+      NOTIFICATION_SERVICE_URL: http://notification-service:${NOTIFICATION_SERVICE_PORT:-8080}
+      ANALYTICS_SERVICE_URL: http://analytics-service:${ANALYTICS_SERVICE_PORT:-8080}
     ports:
-      - "8080:8080"
+      - "${API_GATEWAY_PORT:-8080}:${API_GATEWAY_PORT:-8080}"
     depends_on:
       - identity-service
 
@@ -248,7 +248,7 @@ services:
     image: openzipkin/zipkin:3
     container_name: zipkin
     ports:
-      - "9411:9411"
+      - "${ZIPKIN_PORT:-9411}:9411"
 
 volumes:
   pgadmin_data:

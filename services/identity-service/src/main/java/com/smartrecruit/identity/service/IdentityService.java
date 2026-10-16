@@ -10,7 +10,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +19,6 @@ import com.smartrecruit.identity.dto.CandidateRegistrationRequest;
 import com.smartrecruit.identity.dto.LoginRequest;
 import com.smartrecruit.identity.dto.RecruiterRegistrationRequest;
 import com.smartrecruit.identity.dto.TokenResponse;
-import com.smartrecruit.identity.dto.UpdateProfileRequest;
 import com.smartrecruit.identity.dto.UserResponse;
 import com.smartrecruit.identity.exception.StorageException;
 import com.smartrecruit.identity.model.Candidate;
@@ -115,21 +113,6 @@ public class IdentityService {
 				new UsernamePasswordAuthenticationToken(email, request.password()));
 		User user = (User) authentication.getPrincipal();
 		return tokenService.issue(user);
-	}
-
-	@Transactional(readOnly = true)
-	public UserResponse getProfile(Jwt jwt) {
-		return users.findByEmailIgnoreCase(jwt.getSubject())
-				.map(UserResponse::from)
-				.orElseThrow(UserNotFoundException::new);
-	}
-
-	@Transactional
-	public UserResponse updateProfile(Jwt jwt, UpdateProfileRequest request) {
-		User user = users.findByEmailIgnoreCase(jwt.getSubject()).orElseThrow(UserNotFoundException::new);
-		user.setProfile(request.fullName().trim(), request.phone(), request.address(),
-				request.city(), request.state(), request.country(), request.postalCode());
-		return UserResponse.from(users.save(user));
 	}
 
 	private User save(User user) {

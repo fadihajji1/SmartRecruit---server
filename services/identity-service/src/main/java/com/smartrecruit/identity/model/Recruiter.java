@@ -42,4 +42,9 @@ public class Recruiter extends User {
 	public AccountStatus getApprovalStatus() {
 		return approvalStatus;
 	}
+
+	public void setApprovalStatus(AccountStatus approvalStatus) {
+		this.approvalStatus = approvalStatus;
+		setStatus(approvalStatus);
+	}
 }

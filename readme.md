@@ -28,41 +28,13 @@ cd <REPOSITORY_FOLDER>
 
 ## 4. Configure Environment Variables
 
-- Create `.env` file in the project root
-- copy `.env.example` content into`.env`
-
-```dotenv
-# .env.exemple content
-# PostgreSQL
-POSTGRES_PASSWORD=postgres
-
-# Redis
-REDIS_PASSWORD=redis
-
-# JWT: shared by Service and API Gateway
-JWT_SECRET=replace_with_a_generated_random_secret
-JWT_ISSUER=smartrecruit
-
-# Local platform administrator bootstrap
-ADMIN_EMAIL=admin@admin.com
-ADMIN_PASSWORD=admin
-
-# MinIO
-MINIO_ROOT_USER=smartrecruitMinio
-MINIO_ROOT_PASSWORD=SmartRecruitLocalMinio_2026
-MINIO_BUCKET=smartrecruit-private
-
-# pgAdmin: local development only
-PGADMIN_DEFAULT_EMAIL=admin@admin.com
-PGADMIN_DEFAULT_PASSWORD=admin
-```
-
-**or**
+Copy `.env.example` to `.env` in the project root. The example includes the default credentials and all configurable port settings.
 
 ```powershell
-# in powershell
 Copy-Item .env.example .env
 ```
+
+When a port is already in use, change its corresponding setting in `.env`. For the gateway and identity service, `API_GATEWAY_PORT` and `IDENTITY_SERVICE_PORT` set both the application port and its host mapping. Other application `*_SERVICE_PORT` settings configure service destinations inside the Docker network.
 
 ### generate jwt secret
 
@@ -77,7 +49,7 @@ $rng.Dispose()
 $secret
 ```
 
-2. Copy generated secret to **jwt_secret** in `.env`
+2. Copy the generated secret to `JWT_SECRET` in `.env`.
 
 Important: Use a randomly generated JWT secret. Never commit `.env` or share production credentials.
 
@@ -126,7 +98,7 @@ When the containers are running, use these addresses.
 | MinIO S3 API                | [http://localhost:9002](http://localhost:9002)                                 |
 | Swagger-ui                  | [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html) |
 
-The application endpoints may differ from these infrastructure addresses if the configuration has been changed.
+These are the default addresses. To resolve a port conflict, change the corresponding port value in `.env` and restart the stack with `docker compose up -d`. Keep application service ports aligned with each service's actual listening port.
 
 ### pgAdmin Server Configuration
 
@@ -197,7 +169,7 @@ Check the affected port:
 netstat -ano | findstr :8080
 ```
 
-If a port is occupied, stop the conflicting application or update the corresponding port mapping in `docker-compose.yml`.
+If a port is occupied, stop the conflicting application or change its corresponding port value in `.env`, then restart the stack with `docker compose up -d`.
 
 ---
 
