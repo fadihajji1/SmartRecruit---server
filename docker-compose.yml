@@ -219,6 +219,28 @@ services:
       minio:
         condition: service_started
 
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/notification-service
+        APP_JAR: notification-service
+    container_name: smartrecruit-notification-service
+    restart: unless-stopped
+    environment:
+      NOTIFICATION_SERVICE_PORT: 8080
+      NOTIFICATION_DB_URL: jdbc:postgresql://notification-db:5432/notification_db
+      NOTIFICATION_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+    ports:
+      - "8088:8080"
+    depends_on:
+      notification-db:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: .
@@ -243,6 +265,7 @@ services:
       - "8080:8080"
     depends_on:
       - identity-service
+      - notification-service
 
   zipkin:
     image: openzipkin/zipkin:3
