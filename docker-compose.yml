@@ -219,6 +219,112 @@ services:
       minio:
         condition: service_started
 
+  candidate-ai-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/candidate-ai-service
+        APP_JAR: candidate-ai-service
+    container_name: smartrecruit-candidate-ai-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      CANDIDATE_AI_DB_URL: jdbc:postgresql://candidate-db:5432/candidate_db
+      CANDIDATE_AI_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      MINIO_CV_BUCKET: ${MINIO_CV_BUCKET:-smartrecruit-cvs}
+    ports:
+      - "8091:8080"
+    depends_on:
+      candidate-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  subscription-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/subscription-service
+        APP_JAR: subscription-service
+    container_name: smartrecruit-subscription-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      SUBSCRIPTION_DB_URL: jdbc:postgresql://subscription-db:5432/subscription_db
+      SUBSCRIPTION_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+    ports:
+      - "8092:8080"
+    depends_on:
+      subscription-db:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/notification-service
+        APP_JAR: notification-service
+    container_name: smartrecruit-notification-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      NOTIFICATION_DB_URL: jdbc:postgresql://notification-db:5432/notification_db
+      NOTIFICATION_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+    ports:
+      - "8094:8080"
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  analytics-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/analytics-service
+        APP_JAR: analytics-service
+    container_name: smartrecruit-analytics-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      ANALYTICS_DB_URL: jdbc:postgresql://analytics-db:5432/analytics_db
+      ANALYTICS_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+    ports:
+      - "8095:8080"
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: .
@@ -239,10 +345,15 @@ services:
       INTERVIEW_SERVICE_URL: http://interview-service:8080
       NOTIFICATION_SERVICE_URL: http://notification-service:8080
       ANALYTICS_SERVICE_URL: http://analytics-service:8080
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
     ports:
       - "8080:8080"
     depends_on:
       - identity-service
+      - candidate-ai-service
+      - subscription-service
+      - notification-service
+      - analytics-service
 
   zipkin:
     image: openzipkin/zipkin:3

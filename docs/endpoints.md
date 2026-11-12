@@ -116,12 +116,13 @@ GET  /api/v1/candidate/applications/{applicationId}
 GET    /api/v1/candidate/cvs
 POST   /api/v1/candidate/cvs
 GET    /api/v1/candidate/cvs/{cvId}
+GET    /api/v1/candidate/cvs/{cvId}/download
 DELETE /api/v1/candidate/cvs/{cvId}
 POST   /api/v1/candidate/cvs/{cvId}/ats-scan
 GET    /api/v1/candidate/recommendations
 ```
 
-CV upload is handled by the service and stored in MinIO. Private files are never exposed as public object URLs.
+CV upload is `multipart/form-data` with a `file` part. The service accepts valid PDF, DOC and DOCX files up to 10 MB, stores their private binaries in MinIO, and returns metadata only. Download is streamed through the authenticated service; a CV is never exposed as a public object URL. ATS scan accepts an optional JSON body such as `{"jobDescription":"Senior Java developer..."}`. The local provider currently performs deterministic skills and document-structure analysis; it does not call an external model.
 
 ## 6. Subscription Service
 
@@ -139,6 +140,7 @@ POST   /api/v1/candidate/subscription/downgrade
 POST   /api/v1/candidate/subscription/renew
 POST   /api/v1/candidate/subscription/cancel
 GET    /api/v1/candidate/subscription/history
+GET    /api/v1/candidate/subscription/invoices
 ```
 
 ### Recruiter
@@ -150,6 +152,7 @@ POST   /api/v1/recruiter/subscription/downgrade
 POST   /api/v1/recruiter/subscription/renew
 POST   /api/v1/recruiter/subscription/cancel
 GET    /api/v1/recruiter/subscription/history
+GET    /api/v1/recruiter/subscription/invoices
 ```
 
 ### Administrator
@@ -196,6 +199,8 @@ DELETE /api/v1/notifications/{notificationId}
 
 The Notification Service is event-driven internally. It consumes relevant Kafka events and creates notification records, then can deliver through in-app, email or outbound webhook mechanisms.
 
+The current implementation provides the authenticated in-app inbox, read/unread and delete operations. Email and webhook delivery are integration points, not configured delivery channels.
+
 ## 9. Analytics Service
 
 ```text
@@ -205,7 +210,27 @@ GET  /api/v1/recruiter/analytics/applications
 GET  /api/v1/recruiter/analytics/export/pdf
 ```
 
-## 10. Operational endpoints
+Analytics aggregates domain events and scopes rows to the authenticated recruiter's `user_id`. Metrics remain empty until Recruitment and Interview publishers emit events with the recruiter and aggregate IDs described below.
+
+## 11. Domain event envelope
+
+Candidate/AI, Notification and Analytics consume JSON from the shared `smartrecruit.domain-events` Kafka topic. Publish one JSON object per event using this envelope:
+
+```json
+{
+  "eventId": "UUID",
+  "eventType": "JOB_PUBLISHED",
+  "occurredAt": "2026-11-12T12:00:00Z",
+  "aggregateId": "UUID",
+  "payload": {}
+}
+```
+
+The `eventId` must be a stable UUID across redelivery. Job events should include `jobId`, `businessId`, `recruiterId`, `title`, `description`, `location` and `status`. Application events should include `applicationId`, `jobId`, `candidateId`, `recruiterId`, `status` and `jobTitle`. Interview events should include `interviewId`, `applicationId`, `candidateId`, `recruiterId`, `jobId` and `status`. Use event names such as `JOB_PUBLISHED`, `JOB_UPDATED`, `JOB_CLOSED`, `JOB_DELETED`, `APPLICATION_SUBMITTED`, `APPLICATION_STATUS_CHANGED`, `INTERVIEW_SCHEDULED`, `INTERVIEW_RESCHEDULED` and `INTERVIEW_CANCELLED`.
+
+For Notification events, include `recipientUserId` or `recipientUserIds` in `payload`. The service derives application, interview and subscription recipients from the payload when those fields are absent. Consumers are idempotent and retry failures before sending exhausted records to `<topic>.DLT`.
+
+## 12. Operational endpoints
 
 Each service should expose protected/appropriate actuator endpoints such as:
 
@@ -215,7 +240,7 @@ GET /actuator/info
 GET /actuator/metrics
 ```
 
-## 11. Error contract
+## 13. Error contract
 
 Use a consistent JSON error shape, for example:
 

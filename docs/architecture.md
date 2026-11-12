@@ -2,7 +2,7 @@
 
 ## 1. Architecture Overview
 
-SmartRecruit is a distributed microservices platform built with **React/TypeScript** and **Spring Boot**.
+SmartRecruit is a distributed microservices platform built with an **Angular/TypeScript** frontend and **Spring Boot** services.
 
 ## Project Structure
 
@@ -161,7 +161,7 @@ SmartRecruit/
 | OpenFeign / REST                    | Synchronous service-to-service communication.                                                          |
 | Redis                               | Selective caching layer for read-heavy and frequently accessed data.                                   |
 | MinIO                               | Object storage for CVs, employment-proof documents, and other files.                                   |
-| External Integrations               | AI providers, payment gateways, email services, webhooks.                                              |
+| External Integrations               | Pluggable AI and payment providers, email services, webhooks.                                            |
 
 ### Core principles
 
@@ -205,7 +205,7 @@ SmartRecruit/
 
 ```text
                          ┌──────────────────┐
-                         │  React Frontend  │
+                         │ Angular Frontend │
                          └────────┬─────────┘
                                   │
                                   ▼
@@ -261,15 +261,13 @@ Each service owns its PostgreSQL database. Redis is shared infrastructure used o
 
 ### Frontend stack
 
-- React
-- TypeScript
-- Vite
-- React Router
-- TanStack Query
-- React Hook Form
-- Zod
-- Recharts
-- Calendar component
+- Angular 18 standalone components
+- TypeScript and RxJS
+- Angular Router and HttpClient
+- Reactive Forms
+- JWT bearer authentication through the API Gateway
+
+The frontend lives in the adjacent `SmartRecruit-Stitch-Angular` repository. Development uses the Angular `/api` proxy to reach `http://localhost:8080`; the Nginx image proxies `/api/` to `API_GATEWAY_HOST` (default `api-gateway:8080`).
 
 ### Swagger/OpenAPI
 
@@ -1017,17 +1015,19 @@ Docker Compose infrastructure
 
 ### API gateway
 
-The `api-gateway` Spring Cloud Gateway application is the public API entry point. It preserves request paths and routes by `/api/v1` path families to the corresponding backend. Identity registration and login paths are public; other paths require a valid JWT signed with the same `JWT_SECRET` and issuer as Identity Service. The bearer token is forwarded to the backend, which remains responsible for its own authorization.
+The `api-gateway` Spring Cloud Gateway application is the public API entry point. It preserves request paths and routes by `/api/v1` path families to the corresponding backend. Only login/registration POSTs, public job GETs and the active-plan catalog GET are anonymous; other paths require a valid JWT signed with the same `JWT_SECRET` and issuer as Identity Service. The bearer token is forwarded to the backend, which remains responsible for its own authorization.
 
 | Path family                                                           | Kubernetes Service     |
 | --------------------------------------------------------------------- | ---------------------- |
-| `/api/v1/auth/**`, `/api/v1/users/**`                                 | `identity-service`     |
-| `/api/v1/jobs/**`, `/api/v1/applications/**`, `/api/v1/businesses/**` | `recruitment-service`  |
-| `/api/v1/candidates/**`, `/api/v1/cvs/**`, `/api/v1/ai/**`            | `candidate-ai-service` |
-| `/api/v1/subscriptions/**`, `/api/v1/plans/**`                        | `subscription-service` |
-| `/api/v1/interviews/**`                                               | `interview-service`    |
-| `/api/v1/notifications/**`                                            | `notification-service` |
-| `/api/v1/analytics/**`                                                | `analytics-service`    |
+| `/api/v1/auth/**`, `/api/v1/users/**`, `/api/v1/recruiters/**`, `/api/v1/admin/users/**` | `identity-service`     |
+| `/api/v1/jobs/**`, `/api/v1/applications/**`, `/api/v1/businesses/**`                    | `recruitment-service`  |
+| `/api/v1/candidate/cvs/**`, `/api/v1/candidate/recommendations`                           | `candidate-ai-service` |
+| `/api/v1/subscriptions/plans`, `/api/v1/{candidate,recruiter,admin}/subscription/**`      | `subscription-service` |
+| `/api/v1/interviews/**`, `/api/v1/{candidate,recruiter}/interviews/**`                   | `interview-service`    |
+| `/api/v1/notifications/**`                                                               | `notification-service` |
+| `/api/v1/recruiter/analytics/**`                                                          | `analytics-service`    |
+
+The local Compose stack currently starts Identity, Candidate/AI, Subscription, Notification and Analytics. Recruitment and Interview are routed but are not included in the Compose application containers yet.
 
 ### Production
 
@@ -1076,7 +1076,7 @@ Redis should be deployed and configured for the required persistence and availab
 
 ```text
                          ┌──────────────────┐
-                         │  React Frontend  │
+                         │ Angular Frontend │
                          └────────┬─────────┘
                                   │
                                   ▼
@@ -1116,7 +1116,7 @@ The architecture combines:
 
 - Microservices
 - Spring Boot
-- React/TypeScript
+- Angular/TypeScript
 - Spring Cloud Gateway
 - Kubernetes-native service discovery
 - OpenFeign
@@ -1143,7 +1143,7 @@ The following rules are architectural constraints:
 - No direct cross-service database access.
 - No frontend-only authorization.
 - No public access to private CV files.
-- No direct React-to-AI-provider integration.
+- No direct frontend-to-AI-provider integration.
 - No secret credentials committed to Git.
 - No auto-increment integer primary keys.
 - No internal video-conferencing implementation; interviews store external meeting links.

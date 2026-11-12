@@ -4,6 +4,10 @@
 
 The implementation follows the seven-service architecture and prioritizes working business flows before production hardening.
 
+## Current implementation status
+
+On the master-based integration branch, Identity remains the existing foundation. Candidate/AI, Subscription, Notification and Analytics now have layered controllers, DTOs, services, repositories, entities and Flyway migrations, with gateway routes and Angular API screens. Recruitment and Interview service implementation is intentionally left to their owners. Candidate ATS analysis currently uses a local deterministic provider, subscription payment uses a mock adapter, and event-driven recommendations/notifications/analytics depend on the domain events described in `endpoints.md`.
+
 ## Phase 0 — Project foundations
 
 ### Backend

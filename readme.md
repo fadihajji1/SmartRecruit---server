@@ -32,7 +32,7 @@ cd <REPOSITORY_FOLDER>
 - copy `.env.example` content into`.env`
 
 ```dotenv
-# .env.exemple content
+# .env.example content
 # PostgreSQL
 POSTGRES_PASSWORD=postgres
 
@@ -41,7 +41,8 @@ REDIS_PASSWORD=redis
 
 # JWT: shared by Service and API Gateway
 JWT_SECRET=replace_with_a_generated_random_secret
-JWT_ISSUER=smartrecruit
+JWT_ISSUER=smartrecruit-identity
+CORS_ALLOWED_ORIGINS=http://localhost:4200
 
 # Local platform administrator bootstrap
 ADMIN_EMAIL=admin@admin.com
@@ -51,6 +52,8 @@ ADMIN_PASSWORD=admin
 MINIO_ROOT_USER=smartrecruitMinio
 MINIO_ROOT_PASSWORD=SmartRecruitLocalMinio_2026
 MINIO_BUCKET=smartrecruit-private
+MINIO_CV_BUCKET=smartrecruit-cvs
+DOMAIN_EVENTS_TOPIC=smartrecruit.domain-events
 
 # pgAdmin: local development only
 PGADMIN_DEFAULT_EMAIL=admin@admin.com
@@ -85,7 +88,7 @@ Important: Use a randomly generated JWT secret. Never commit `.env` or share pro
 
 ## 5. Build and Start the Project
 
-Docker Compose starts : Configured databases, Redis, Kafka, Kafka UI, MinIO, pgAdmin, Identity Service, and API Gateway.
+Docker Compose starts the databases and shared infrastructure, plus Identity, Candidate/AI, Subscription, Notification and Analytics services with the API Gateway. Recruitment and Interview containers are not included while those services are being completed; their gateway routes are ready for the service owners to add them.
 
 Open PowerShell in the project root.
 
@@ -111,6 +114,10 @@ When the containers are running, use these addresses.
 | API Gateway                 | [http://localhost:8080](http://localhost:8080)                                 |
 | Identity Service            | [http://localhost:8082](http://localhost:8082)                                 |
 | Identity Service Swagger UI | [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html) |
+| Candidate/AI Service        | [http://localhost:8091](http://localhost:8091)                                 |
+| Subscription Service        | [http://localhost:8092](http://localhost:8092)                                 |
+| Notification Service        | [http://localhost:8094](http://localhost:8094)                                 |
+| Analytics Service           | [http://localhost:8095](http://localhost:8095)                                 |
 | Kafka UI                    | [http://localhost:8081](http://localhost:8081)                                 |
 | MinIO Console               | [http://localhost:9003](http://localhost:9003)                                 |
 | pgAdmin                     | [http://localhost:5050](http://localhost:5050)                                 |
@@ -126,7 +133,15 @@ When the containers are running, use these addresses.
 | MinIO S3 API                | [http://localhost:9002](http://localhost:9002)                                 |
 | Swagger-ui                  | [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html) |
 
-The application endpoints may differ from these infrastructure addresses if the configuration has been changed.
+The candidate, subscription, notification and analytics APIs are available through the gateway at `http://localhost:8080/api/v1`. Direct service URLs above are useful for local Swagger UI and service diagnostics. The API Gateway forwards the JWT to each service, which validates authorization independently.
+
+### Frontend
+
+The Angular frontend is in the adjacent `SmartRecruit-Stitch-Angular` repository. Run it with `npm install` and `npm start`; its `/api` dev proxy forwards requests to the gateway on port 8080. For the production Nginx image, set `API_GATEWAY_HOST` to the gateway host and port (default `api-gateway:8080`) on the same Docker network.
+
+The Candidate/AI ATS scan uses a local deterministic skills and document-structure analyzer. Subscription charges use a mock payment adapter. Replace these adapters before enabling real AI processing or payments.
+
+Kafka consumers in Candidate/AI, Notification and Analytics share `DOMAIN_EVENTS_TOPIC`. The Recruitment and Interview service owners should publish the event envelope and payload fields documented in `docs/endpoints.md` so job recommendations, notifications and recruiter analytics can populate.
 
 ### pgAdmin Server Configuration
 
