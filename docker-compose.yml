@@ -190,6 +190,7 @@ services:
       - minio_data:/data
 
   identity-service:
+    profiles: ["app"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -220,6 +221,7 @@ services:
         condition: service_started
 
   api-gateway:
+    profiles: ["app"]
     build:
       context: .
       dockerfile: Dockerfile
