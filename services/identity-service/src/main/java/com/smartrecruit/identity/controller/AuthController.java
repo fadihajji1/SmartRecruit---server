@@ -2,11 +2,7 @@ package com.smartrecruit.identity.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,7 +15,6 @@ import com.smartrecruit.identity.dto.CandidateRegistrationRequest;
 import com.smartrecruit.identity.dto.LoginRequest;
 import com.smartrecruit.identity.dto.RecruiterRegistrationRequest;
 import com.smartrecruit.identity.dto.TokenResponse;
-import com.smartrecruit.identity.dto.UpdateProfileRequest;
 import com.smartrecruit.identity.dto.UserResponse;
 import com.smartrecruit.identity.service.IdentityService;
 
@@ -31,7 +26,6 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
@@ -169,54 +163,4 @@ public class AuthController {
 		return identityService.login(request);
 	}
 
-	// get profile endpoints
-	@GetMapping("/users/me")
-	@SecurityRequirement(name = "bearerAuth")
-	@Operation(
-		summary = "Get current user profile",
-		description = "Returns the profile belonging to the authenticated account.")
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "Profile returned", content = @Content(schema = @Schema(implementation = UserResponse.class))),
-			@ApiResponse(responseCode = "401", description = "Missing or invalid bearer token", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class)))
-	})
-	public UserResponse profile(@AuthenticationPrincipal Jwt jwt) {
-		return identityService.getProfile(jwt);
-	}
-
-	// update profile endpoint
-	@PatchMapping("/users/me")
-	@SecurityRequirement(name = "bearerAuth")
-	@Operation(
-		summary = "Update current user profile", 
-		description = "Updates permitted profile fields for the authenticated account.",
-		requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
-			required = true,
-			content = @Content(
-				mediaType = "application/json", 
-				schema = @Schema(implementation = UpdateProfileRequest.class),
-				examples = @ExampleObject(
-					name = "Profile Update Example", 
-					value = """
-						{
-						  "fullName": "Fadi Hajji",
-						  "phone": "+21612345678",
-						  "address": "12 Main Street",
-						  "city": "Tunis",
-						  "state": "Tunis",
-						  "country": "Tunisia",
-						  "postalCode": "1000"
-						}
-						"""
-				)
-			)
-		))
-	@ApiResponses({
-			@ApiResponse(responseCode = "200", description = "Profile updated", content = @Content(schema = @Schema(implementation = UserResponse.class))),
-			@ApiResponse(responseCode = "400", description = "Invalid profile details", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class))),
-			@ApiResponse(responseCode = "401", description = "Missing or invalid bearer token", content = @Content(schema = @Schema(implementation = com.smartrecruit.identity.dto.ApiError.class)))
-	})
-	public UserResponse updateProfile(@AuthenticationPrincipal Jwt jwt,
-			@Valid @RequestBody UpdateProfileRequest request) {
-		return identityService.updateProfile(jwt, request);
-	}
 }
