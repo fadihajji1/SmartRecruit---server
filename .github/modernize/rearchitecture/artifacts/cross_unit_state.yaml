@@ -1,0 +1,2 @@
+flows: []
+notes: "No session, ThreadLocal, cookie, request-attribute, static-state, or cache flow could be established from the implemented source. JWT subject is consumed within request units, but no cross-unit writer/reader pair exists in this repository." 

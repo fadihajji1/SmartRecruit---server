@@ -1,0 +1,5 @@
+unit: interview-service-shell
+side_effects: []
+branches: []
+error_paths: []
+concurrency: {model: sync, tx_boundary: {source_loc: services/interview-service/src/main/java/com/smartrecruit/interview/InterviewServiceApplication.java:1, scope: "No transaction-bearing implementation found.", isolation: "not applicable", must_preserve: false}}

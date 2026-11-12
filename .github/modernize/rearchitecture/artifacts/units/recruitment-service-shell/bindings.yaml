@@ -1,0 +1,9 @@
+unit: recruitment-service-shell
+bindings:
+  - type: annotation
+    name: "Spring Boot application and JWT resource server configuration"
+    source_loc: services/recruitment-service/src/main/java/com/smartrecruit/recruitment/config/ApiSecurityConfiguration.java:24
+    target: recruitment service shell
+    must_appear_in_target: true
+    notes: "No REST route binding was found."
+runtime_config: []

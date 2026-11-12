@@ -1,0 +1,7 @@
+unit: api-gateway-routing
+commit: false
+candidate_splits:
+  - id: services/api-gateway/src/main/resources/application.yml:16-50
+    drivers: [protocol_split, change_cadence_split]
+    rationale: "Route declarations are independently changed by backend service and deployment boundaries, while shared gateway security and timeout policy are cross-cutting."
+    source_slice: {file: services/api-gateway/src/main/resources/application.yml, lines: [16, 50]}

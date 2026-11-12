@@ -241,6 +241,28 @@ services:
       notification-db:
         condition: service_healthy
 
+  interview-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/interview-service
+        APP_JAR: interview-service
+    container_name: smartrecruit-interview-service
+    restart: unless-stopped
+    environment:
+      INTERVIEW_SERVICE_PORT: 8080
+      INTERVIEW_DB_URL: jdbc:postgresql://interview-db:5432/interview_db
+      INTERVIEW_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+    ports:
+      - "8083:8080"
+    depends_on:
+      interview-db:
+        condition: service_healthy
+
   api-gateway:
     build:
       context: .
@@ -266,6 +288,7 @@ services:
     depends_on:
       - identity-service
       - notification-service
+      - interview-service
 
   zipkin:
     image: openzipkin/zipkin:3

@@ -1,0 +1,68 @@
+contracts:
+  - name: candidate-registration
+    unit: identity-auth-profile
+    type: rest
+    stability: must_preserve
+    source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:49
+    contract:
+      method: POST
+      path: /api/v1/auth/register/candidate
+      request: CandidateRegistrationRequest JSON
+      response: 201 UserResponse
+      error: 400 validation; 409 duplicate email
+      auth: public
+    target_contract:
+      method: "POST /api/v1/auth/register/candidate -> 201 UserResponse"
+      notes: "Preserve JSON field names and validation/error semantics."
+    semantic_divergence: []
+  - name: recruiter-registration
+    unit: identity-auth-profile
+    type: rest
+    stability: must_preserve
+    source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:92
+    contract:
+      method: POST
+      path: /api/v1/auth/register/recruiter
+      request: multipart/form-data with registration JSON part and employmentProof binary part
+      response: 201 UserResponse
+      error: 400 validation/storage input; 409 duplicate email; 502 storage unavailable
+      auth: public
+    target_contract:
+      method: "POST multipart /api/v1/auth/register/recruiter -> 201 UserResponse"
+      notes: "Store the employment proof before persistence and delete it on database failure when possible."
+    semantic_divergence: []
+  - name: identity-login
+    unit: identity-auth-profile
+    type: rest
+    stability: must_preserve
+    source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:143
+    contract:
+      method: POST
+      path: /api/v1/auth/login
+      request: LoginRequest JSON
+      response: 200 TokenResponse
+      error: 400 validation; 401 invalid credentials or inactive account
+      auth: public
+    target_contract:
+      method: "POST /api/v1/auth/login -> 200 TokenResponse"
+      notes: "JWT issuer and HMAC-SHA256 validation configuration are shared with gateway and services."
+    semantic_divergence: []
+  - name: notification-management
+    unit: notification-management
+    type: rest
+    stability: must_preserve
+    source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/controller/NotificationController.java:38
+    contract:
+      method: "GET/POST/PATCH/DELETE"
+      path: /api/v1/notifications/**
+      request: Notification DTOs, UUID path ids, optional read query parameter
+      response: notification list/response, unread count, or 204 on delete
+      error: 401; 403 ownership violation; 404 missing notification
+      auth: bearer JWT for user operations; create endpoint currently has no explicit security annotation
+    target_contract:
+      method: "Preserve implemented notification routes and ownership checks"
+      notes: "The create and seed-sample endpoints require an explicit security review because controller code does not annotate them as protected."
+    semantic_divergence:
+      - field: recipient_email
+        issue: "Implemented schema identifies recipients by email, while docs/database.md describes recipient_user_id."
+        source_loc: services/notification-service/src/main/resources/db/migration/V1__create_notification_tables.sql:3

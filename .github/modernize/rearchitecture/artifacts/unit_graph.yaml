@@ -1,0 +1,107 @@
+units:
+  - name: api-gateway-routing
+    trigger: api
+    trigger_detail: "Reactive gateway routes under /api/v1/**"
+    source_anchors:
+      - path: services/api-gateway/src/main/resources/application.yml
+        line: 16
+      - path: services/api-gateway/src/main/java/com/smartrecruit/gateway/GatewaySecurityConfiguration.java
+        line: 33
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []
+  - name: identity-auth-profile
+    trigger: route
+    trigger_detail: "POST /api/v1/auth/**; GET/PATCH /api/v1/users/me"
+    source_anchors:
+      - path: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java
+        line: 37
+      - path: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java
+        line: 32
+      - path: services/identity-service/src/main/resources/db/migration/V1__create_identity_tables.sql
+        line: 1
+    exported_signature:
+      - method: "UserResponse registerCandidate(CandidateRegistrationRequest)"
+        source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:87
+        stability: must_preserve
+      - method: "TokenResponse login(LoginRequest)"
+        source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:168
+        stability: must_preserve
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []
+  - name: notification-management
+    trigger: route
+    trigger_detail: "GET/POST/PATCH/DELETE /api/v1/notifications/**"
+    source_anchors:
+      - path: services/notification-service/src/main/java/com/smartrecruit/notification/controller/NotificationController.java
+        line: 37
+      - path: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java
+        line: 19
+      - path: services/notification-service/src/main/resources/db/migration/V1__create_notification_tables.sql
+        line: 1
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []
+  - name: recruitment-service-shell
+    trigger: api
+    trigger_detail: "Documented /api/v1/jobs, /applications, and /businesses routes; no controllers found"
+    source_anchors:
+      - path: services/recruitment-service/src/main/java/com/smartrecruit/recruitment/RecruitmentServiceApplication.java
+        line: 1
+      - path: services/recruitment-service/src/main/java/com/smartrecruit/recruitment/config/ApiSecurityConfiguration.java
+        line: 24
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []
+  - name: candidate-ai-service-shell
+    trigger: api
+    trigger_detail: "Documented /api/v1/candidate/cvs and recommendations routes; no controllers found"
+    source_anchors:
+      - path: services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/CandidateaiServiceApplication.java
+        line: 1
+      - path: services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/config/ApiSecurityConfiguration.java
+        line: 24
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []
+  - name: subscription-service-shell
+    trigger: api
+    trigger_detail: "Documented /api/v1/subscriptions and /api/v1/plans routes; no controllers found"
+    source_anchors:
+      - path: services/subscription-service/src/main/java/com/smartrecruit/subscription/SubscriptionServiceApplication.java
+        line: 1
+      - path: services/subscription-service/src/main/java/com/smartrecruit/subscription/config/ApiSecurityConfiguration.java
+        line: 24
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []
+  - name: interview-service-shell
+    trigger: api
+    trigger_detail: "Documented /api/v1/interviews routes; no controllers found"
+    source_anchors:
+      - path: services/interview-service/src/main/java/com/smartrecruit/interview/InterviewServiceApplication.java
+        line: 1
+      - path: services/interview-service/src/main/java/com/smartrecruit/interview/config/ApiSecurityConfiguration.java
+        line: 24
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []
+  - name: analytics-service-shell
+    trigger: api
+    trigger_detail: "Documented /api/v1/recruiter/analytics routes; no controllers found"
+    source_anchors:
+      - path: services/analytics-service/src/main/java/com/smartrecruit/analytics/AnalyticsServiceApplication.java
+        line: 1
+      - path: services/analytics-service/src/main/java/com/smartrecruit/analytics/config/ApiSecurityConfiguration.java
+        line: 24
+    exported_signature: []
+    dynamic_entrypoints: []
+    depends_on: []
+    shared_refs: []

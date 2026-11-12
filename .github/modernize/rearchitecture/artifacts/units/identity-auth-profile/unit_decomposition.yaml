@@ -1,0 +1,11 @@
+unit: identity-auth-profile
+commit: false
+candidate_splits:
+  - id: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:48-140
+    drivers: [protocol_split, concern_split]
+    rationale: "Candidate JSON registration and recruiter multipart registration have different wire protocols, validation, and storage side effects."
+    source_slice: {file: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java, lines: [48, 140]}
+  - id: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:52-110
+    drivers: [concern_split, lifecycle_split]
+    rationale: "Registration flows combine identity persistence with password policy and object-storage lifecycle compensation."
+    source_slice: {file: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java, lines: [52, 110]}

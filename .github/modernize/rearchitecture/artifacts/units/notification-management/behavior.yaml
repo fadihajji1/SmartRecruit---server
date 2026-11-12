@@ -1,0 +1,38 @@
+unit: notification-management
+side_effects:
+  - source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java:47
+    effect: "Persist a new notification."
+    must_preserve: true
+  - source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java:54
+    effect: "Set notification read state and read timestamp."
+    must_preserve: true
+  - source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java:67
+    effect: "Delete a notification after ownership validation."
+    must_preserve: true
+branches:
+  - source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/controller/NotificationController.java:61
+    condition: "Optional read query parameter is supplied."
+    behavior: "Filter notifications by read state; otherwise return all for the authenticated email."
+    must_preserve: true
+  - source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java:87
+    condition: "Notification recipient email differs from authenticated email."
+    behavior: "Reject access with forbidden error."
+    must_preserve: true
+error_paths:
+  - source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java:83
+    trigger: "Notification id is absent."
+    outcome: "Return not-found error."
+    contract: "HTTP 404"
+    must_preserve: true
+  - source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java:87
+    trigger: "Notification belongs to another recipient."
+    outcome: "Return forbidden error."
+    contract: "HTTP 403"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java:28
+    scope: "Notification reads and state mutations execute in service-level read-only or read-write transactions."
+    isolation: "Default datasource isolation"
+    must_preserve: true

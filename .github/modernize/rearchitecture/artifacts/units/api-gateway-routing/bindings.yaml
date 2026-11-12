@@ -1,0 +1,21 @@
+unit: api-gateway-routing
+bindings:
+  - type: route-declaration
+    name: "Spring Cloud Gateway routes"
+    source_loc: services/api-gateway/src/main/resources/application.yml:16
+    target: gateway route locator
+    must_appear_in_target: true
+    notes: "Seven path families are configured; only Identity and Notification are backed by running Compose application containers."
+  - type: filter
+    name: "Reactive JWT resource server"
+    source_loc: services/api-gateway/src/main/java/com/smartrecruit/gateway/GatewaySecurityConfiguration.java:33
+    target: security web filter chain
+    must_appear_in_target: true
+    notes: "HMAC-SHA256 JWT validation with issuer validation."
+runtime_config:
+  - key: JWT_SECRET
+    source_loc: services/api-gateway/src/main/resources/application.yml:54
+    source: env
+    default_value: "none; required"
+    must_appear_in_target: true
+    notes: "Must match Identity and backend services."

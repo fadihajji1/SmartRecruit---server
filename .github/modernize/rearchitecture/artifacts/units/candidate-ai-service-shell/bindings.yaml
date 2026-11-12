@@ -1,0 +1,9 @@
+unit: candidate-ai-service-shell
+bindings:
+  - type: annotation
+    name: "Spring Boot application and JWT resource server configuration"
+    source_loc: services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/config/ApiSecurityConfiguration.java:24
+    target: candidate AI service shell
+    must_appear_in_target: true
+    notes: "No controller, MinIO adapter, AI client, or persistence binding was found."
+runtime_config: []
