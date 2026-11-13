@@ -1,0 +1,9 @@
+unit: analytics-service-shell
+bindings:
+  - type: annotation
+    name: "Spring Boot application and JWT resource server configuration"
+    source_loc: services/analytics-service/src/main/java/com/smartrecruit/analytics/config/ApiSecurityConfiguration.java:24
+    target: analytics service shell
+    must_appear_in_target: true
+    notes: "No Kafka consumer, read model, analytics controller, repository, or PDF exporter was found."
+runtime_config: []

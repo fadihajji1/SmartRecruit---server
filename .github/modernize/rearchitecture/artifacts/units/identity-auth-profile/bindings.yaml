@@ -1,0 +1,33 @@
+unit: identity-auth-profile
+bindings:
+  - type: route-declaration
+    name: "@RequestMapping(/api/v1), @PostMapping, @GetMapping, @PatchMapping"
+    source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:37
+    target: AuthController
+    must_appear_in_target: true
+    notes: "Includes JSON and multipart request binding plus bearer principal binding."
+  - type: annotation
+    name: "@Entity User with JOINED inheritance"
+    source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/model/User.java:28
+    target: User model
+    must_appear_in_target: true
+    notes: "Persistence mapping is part of the existing data contract."
+runtime_config:
+  - key: JWT_SECRET
+    source_loc: services/identity-service/src/main/resources/application.yml:28
+    source: env
+    default_value: "none; required"
+    must_appear_in_target: true
+    notes: "Shared HMAC signing/validation secret."
+  - key: JWT_ISSUER
+    source_loc: services/identity-service/src/main/resources/application.yml:29
+    source: env
+    default_value: smartrecruit-identity
+    must_appear_in_target: true
+    notes: "JWT issuer validation."
+  - key: MINIO_ENDPOINT
+    source_loc: services/identity-service/src/main/resources/application.yml:38
+    source: env
+    default_value: http://localhost:9002
+    must_appear_in_target: true
+    notes: "Employment-proof object storage endpoint."

@@ -1,0 +1,21 @@
+unit: notification-management
+bindings:
+  - type: route-declaration
+    name: "@RequestMapping(/api/v1/notifications)"
+    source_loc: services/notification-service/src/main/java/com/smartrecruit/notification/controller/NotificationController.java:37
+    target: NotificationController
+    must_appear_in_target: true
+    notes: "Bearer principal, UUID path variables, optional read query, and JSON request binding are externally observable."
+runtime_config:
+  - key: NOTIFICATION_DB_URL
+    source_loc: services/notification-service/src/main/resources/application.yml:6
+    source: env
+    default_value: jdbc:postgresql://localhost:5438/notification_db
+    must_appear_in_target: true
+    notes: "Notification database connection."
+  - key: JWT_SECRET
+    source_loc: services/notification-service/src/main/resources/application.yml:23
+    source: env
+    default_value: "none; required"
+    must_appear_in_target: true
+    notes: "Shared JWT validation secret."

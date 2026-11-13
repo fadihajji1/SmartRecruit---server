@@ -1,0 +1,15 @@
+unit: api-gateway-routing
+side_effects: []
+branches:
+  - source_loc: services/api-gateway/src/main/java/com/smartrecruit/gateway/GatewaySecurityConfiguration.java:36
+    condition: "Path begins with /api/v1/auth/**."
+    behavior: "Permit the request at the gateway."
+    must_preserve: true
+error_paths: []
+concurrency:
+  model: event-loop
+  tx_boundary:
+    source_loc: services/api-gateway/src/main/resources/application.yml:11
+    scope: "No database transaction; gateway forwards requests with configured connect and response timeouts."
+    isolation: "not applicable"
+    must_preserve: true

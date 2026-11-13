@@ -1,62 +1,128 @@
 package com.smartrecruit.notification.service;
 
-import java.util.Set;
+import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
-import com.smartrecruit.notification.domain.Notification;
+
+import com.smartrecruit.notification.dto.CreateNotificationRequest;
 import com.smartrecruit.notification.dto.NotificationResponse;
+import com.smartrecruit.notification.dto.UnreadCountResponse;
+import com.smartrecruit.notification.exception.ForbiddenNotificationAccessException;
+import com.smartrecruit.notification.exception.NotificationNotFoundException;
+import com.smartrecruit.notification.model.Notification;
+import com.smartrecruit.notification.model.NotificationType;
 import com.smartrecruit.notification.repository.NotificationRepository;
 
 @Service
 public class NotificationService {
-    private final NotificationRepository notifications;
-    public NotificationService(NotificationRepository notifications) { this.notifications = notifications; }
 
-    @Transactional(readOnly = true)
-    public Page<NotificationResponse> list(UUID userId, Pageable pageable) {
-        return notifications.findAllByRecipientUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId, pageable).map(NotificationResponse::from);
-    }
+	private final NotificationRepository notificationRepository;
 
-    @Transactional(readOnly = true)
-    public long unreadCount(UUID userId) { return notifications.countByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(userId); }
+	public NotificationService(NotificationRepository notificationRepository) {
+		this.notificationRepository = notificationRepository;
+	}
 
-    @Transactional
-    public int readAll(UUID userId) {
-        var unread = notifications.findAllByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(userId);
-        unread.forEach(Notification::markRead);
-        notifications.saveAll(unread);
-        return unread.size();
-    }
+	@Transactional(readOnly = true)
+	public List<NotificationResponse> getNotificationsForUser(String userEmail, Boolean readFilter) {
+		String email = normalizeEmail(userEmail);
+		List<Notification> list;
+		if (readFilter != null) {
+			list = notificationRepository.findByRecipientEmailIgnoreCaseAndReadOrderByCreatedAtDesc(email, readFilter);
+		} else {
+			list = notificationRepository.findByRecipientEmailIgnoreCaseOrderByCreatedAtDesc(email);
+		}
+		return list.stream().map(NotificationResponse::from).toList();
+	}
 
-    @Transactional
-    public NotificationResponse read(UUID userId, UUID notificationId) {
-        Notification item = owned(userId, notificationId); item.markRead(); return NotificationResponse.from(notifications.save(item));
-    }
+	@Transactional(readOnly = true)
+	public UnreadCountResponse getUnreadCount(String userEmail) {
+		String email = normalizeEmail(userEmail);
+		long count = notificationRepository.countByRecipientEmailIgnoreCaseAndReadFalse(email);
+		return new UnreadCountResponse(count);
+	}
 
-    @Transactional
-    public NotificationResponse unread(UUID userId, UUID notificationId) {
-        Notification item = owned(userId, notificationId); item.markUnread(); return NotificationResponse.from(notifications.save(item));
-    }
+	@Transactional
+	public NotificationResponse markAsRead(UUID notificationId, String userEmail) {
+		Notification notification = findAndVerifyOwnership(notificationId, userEmail);
+		notification.markAsRead();
+		return NotificationResponse.from(notificationRepository.save(notification));
+	}
 
-    @Transactional
-    public void delete(UUID userId, UUID notificationId) { Notification item = owned(userId, notificationId); item.markDeleted(); notifications.save(item); }
+	@Transactional
+	public NotificationResponse markAsUnread(UUID notificationId, String userEmail) {
+		Notification notification = findAndVerifyOwnership(notificationId, userEmail);
+		notification.markAsUnread();
+		return NotificationResponse.from(notificationRepository.save(notification));
+	}
 
-    @Transactional
-    public void createFromEvent(UUID eventId, String eventType, Set<UUID> recipients, String title, String content, String type) {
-        if (eventId == null) return;
-        for (UUID recipient : recipients) {
-            if (recipient == null || notifications.existsBySourceEventIdAndRecipientUserId(eventId, recipient)) continue;
-            notifications.save(new Notification(recipient, eventId, eventType, type, title, content));
-        }
-    }
+	@Transactional
+	public void deleteNotification(UUID notificationId, String userEmail) {
+		Notification notification = findAndVerifyOwnership(notificationId, userEmail);
+		notificationRepository.delete(notification);
+	}
 
-    private Notification owned(UUID userId, UUID notificationId) {
-        return notifications.findByIdAndRecipientUserIdAndDeletedAtIsNull(notificationId, userId)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification was not found"));
-    }
+	@Transactional
+	public NotificationResponse createNotification(CreateNotificationRequest request) {
+		Notification notification = new Notification(
+				request.recipientEmail(),
+				request.recipientRole(),
+				request.title(),
+				request.message(),
+				request.type()
+		);
+		return NotificationResponse.from(notificationRepository.save(notification));
+	}
+
+	@Transactional
+	public List<NotificationResponse> seedSampleNotifications(String userEmail, String role) {
+		String email = normalizeEmail(userEmail);
+		String userRole = role != null ? role.toUpperCase() : "CANDIDATE";
+
+		List<Notification> samples;
+		if ("RECRUITER".equals(userRole)) {
+			samples = List.of(
+					new Notification(email, "RECRUITER", "New Application Received",
+							"A candidate (Alice Johnson) applied for Senior Java Developer position.",
+							NotificationType.APPLICATION_UPDATE),
+					new Notification(email, "RECRUITER", "Interview Scheduled",
+							"Technical interview confirmed for tomorrow at 10:00 AM.",
+							NotificationType.INTERVIEW_SCHEDULED),
+					new Notification(email, "RECRUITER", "Profile Verified",
+							"Your recruiter account and employment proof have been approved by admin.",
+							NotificationType.SYSTEM_ALERT)
+			);
+		} else {
+			samples = List.of(
+					new Notification(email, "CANDIDATE", "Application Shortlisted",
+							"Your application for Lead Backend Engineer has been moved to Shortlisted.",
+							NotificationType.APPLICATION_UPDATE),
+					new Notification(email, "CANDIDATE", "Interview Invitation",
+							"You have been invited for an interview with TechCorp HR team.",
+							NotificationType.INTERVIEW_SCHEDULED),
+					new Notification(email, "CANDIDATE", "Welcome to SmartRecruit",
+							"Your candidate account is fully active. Complete your profile to match jobs.",
+							NotificationType.GENERAL)
+			);
+		}
+
+		List<Notification> saved = notificationRepository.saveAll(samples);
+		return saved.stream().map(NotificationResponse::from).toList();
+	}
+
+	private Notification findAndVerifyOwnership(UUID id, String userEmail) {
+		Notification notification = notificationRepository.findById(id)
+				.orElseThrow(NotificationNotFoundException::new);
+		
+		if (!notification.getRecipientEmail().equalsIgnoreCase(normalizeEmail(userEmail))) {
+			throw new ForbiddenNotificationAccessException("Notification does not belong to user");
+		}
+		return notification;
+	}
+
+	private static String normalizeEmail(String email) {
+		return email != null ? email.trim().toLowerCase(Locale.ROOT) : "";
+	}
 }

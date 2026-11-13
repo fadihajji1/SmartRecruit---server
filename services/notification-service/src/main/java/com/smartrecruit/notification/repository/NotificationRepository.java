@@ -1,16 +1,22 @@
 package com.smartrecruit.notification.repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import com.smartrecruit.notification.domain.Notification;
 
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.smartrecruit.notification.model.Notification;
+
+@Repository
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
-    Page<Notification> findAllByRecipientUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID recipientUserId, Pageable pageable);
-    Optional<Notification> findByIdAndRecipientUserIdAndDeletedAtIsNull(UUID id, UUID recipientUserId);
-    long countByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(UUID recipientUserId);
-    java.util.List<Notification> findAllByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(UUID recipientUserId);
-    boolean existsBySourceEventIdAndRecipientUserId(UUID sourceEventId, UUID recipientUserId);
+
+	List<Notification> findByRecipientEmailIgnoreCaseOrderByCreatedAtDesc(String recipientEmail);
+
+	List<Notification> findByRecipientEmailIgnoreCaseAndReadOrderByCreatedAtDesc(String recipientEmail, boolean read);
+
+	long countByRecipientEmailIgnoreCaseAndReadFalse(String recipientEmail);
+
+	Optional<Notification> findByIdAndRecipientEmailIgnoreCase(UUID id, String recipientEmail);
 }
