@@ -237,10 +237,13 @@ services:
       RECRUITMENT_DB_URL: jdbc:postgresql://recruitment-db:5432/recruitment_db
       RECRUITMENT_DB_USERNAME: smartrecruit
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
     ports:
       - "${RECRUITMENT_SERVICE_HOST_PORT:-8090}:${RECRUITMENT_SERVICE_PORT:-8080}"
     depends_on:
       recruitment-db:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
   api-gateway:
