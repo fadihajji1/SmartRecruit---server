@@ -1,6 +1,7 @@
 package com.smartrecruit.recruitment.repository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -12,6 +13,8 @@ import com.smartrecruit.recruitment.model.Application;
 
 public interface ApplicationRepository extends JpaRepository<Application, UUID> {
 	boolean existsByJob_IdAndCandidateId(UUID jobId, UUID candidateId);
+
+	List<Application> findAllByJob_Id(UUID jobId);
 
 	Page<Application> findAllByCandidateId(UUID candidateId, Pageable pageable);
 
