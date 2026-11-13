@@ -5,8 +5,10 @@ import org.springframework.web.multipart.MultipartFile;
 public interface EmploymentProofStorage {
 	String store(MultipartFile file);
 
+	StoredEmploymentProof retrieve(String objectKey);
+
 	void delete(String objectKey);
 
-	/** Short-lived download link for an administrator. */
-	String temporaryUrl(String objectKey);
+	record StoredEmploymentProof(byte[] content, String contentType, String fileName) {
+	}
 }

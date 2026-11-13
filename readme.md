@@ -28,44 +28,13 @@ cd <REPOSITORY_FOLDER>
 
 ## 4. Configure Environment Variables
 
-- Create `.env` file in the project root
-- copy `.env.example` content into`.env`
-
-```dotenv
-# .env.example content
-# PostgreSQL
-POSTGRES_PASSWORD=postgres
-
-# Redis
-REDIS_PASSWORD=redis
-
-# JWT: shared by Service and API Gateway
-JWT_SECRET=replace_with_a_generated_random_secret
-JWT_ISSUER=smartrecruit-identity
-CORS_ALLOWED_ORIGINS=http://localhost:4200
-
-# Local platform administrator bootstrap
-ADMIN_EMAIL=admin@admin.com
-ADMIN_PASSWORD=admin
-
-# MinIO
-MINIO_ROOT_USER=smartrecruitMinio
-MINIO_ROOT_PASSWORD=SmartRecruitLocalMinio_2026
-MINIO_BUCKET=smartrecruit-private
-MINIO_CV_BUCKET=smartrecruit-cvs
-DOMAIN_EVENTS_TOPIC=smartrecruit.domain-events
-
-# pgAdmin: local development only
-PGADMIN_DEFAULT_EMAIL=admin@admin.com
-PGADMIN_DEFAULT_PASSWORD=admin
-```
-
-**or**
+Copy `.env.example` to `.env` in the project root. The example includes the default credentials and all configurable port settings.
 
 ```powershell
-# in powershell
 Copy-Item .env.example .env
 ```
+
+When a port is already in use, change its corresponding setting in `.env`. For the gateway and identity service, `API_GATEWAY_PORT` and `IDENTITY_SERVICE_PORT` set both the application port and its host mapping. Other application `*_SERVICE_PORT` settings configure service destinations inside the Docker network.
 
 ### generate jwt secret
 
@@ -80,7 +49,7 @@ $rng.Dispose()
 $secret
 ```
 
-2. Copy generated secret to **jwt_secret** in `.env`
+2. Copy the generated secret to `JWT_SECRET` in `.env`.
 
 Important: Use a randomly generated JWT secret. Never commit `.env` or share production credentials.
 
@@ -88,21 +57,45 @@ Important: Use a randomly generated JWT secret. Never commit `.env` or share pro
 
 ## 5. Build and Start the Project
 
-Docker Compose starts the databases and shared infrastructure, plus Identity, Candidate/AI, Subscription, Notification and Analytics services with the API Gateway. Recruitment and Interview containers are not included while those services are being completed; their gateway routes are ready for the service owners to add them.
+Docker Compose starts : Configured databases, Redis, Kafka, Kafka UI, MinIO, pgAdmin, Identity Service, and API Gateway.
+Docker Compose manages both infrastructure services and application microservices.
 
 Open PowerShell in the project root.
 
-```
-# step 0  check the docker compose file is valid
-docker compose config --quiet
-# Step 1 — Build the application images from dockerfile
-docker compose build
-# Step 2 — Start the services
-docker compose up -d
-# Step 2 — Start the services without build
+> **Note on Service Profiles:**  
+> `profiles: ["app"]` is configured in `docker-compose.yml` for application services (such as `identity-service`, `api-gateway`, etc.) to separate them from infrastructure containers (PostgreSQL databases, MinIO, Kafka, Redis, pgAdmin, Zipkin).
+>
+> - `docker compose up -d`: Starts only the infrastructure containers.
+> - `docker compose --profile app up -d`: Starts all containers, building and running the application services alongside infrastructure.
+
+### Step 1 — Start application images from dockerfile (for development only)
+
+```powershell
+#### start all containers without building images
+docker compose --profile app up -d
+
+# or — Start the services without build
 docker compose up -d --no-build
-# Step 3 — Check container status
-docker compose ps
+```
+
+> **Note**: when starting service in Vscode OR when running Second Command and says port is in use then start use this command to start containers without building:
+
+> docker compose --profile app up -d
+
+### Step 2 — Build the services (only for deploying to Kubernetes)
+
+```powershell
+# Build services
+docker compose build
+
+### or — Start all containers and build application services with profile "app"
+docker compose --profile app up -d --build
+```
+
+### Step 3 — Check container status
+
+```powershell
+ docker compose ps
 ```
 
 ## 6. Access the Local Services
@@ -114,10 +107,6 @@ When the containers are running, use these addresses.
 | API Gateway                 | [http://localhost:8080](http://localhost:8080)                                 |
 | Identity Service            | [http://localhost:8082](http://localhost:8082)                                 |
 | Identity Service Swagger UI | [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html) |
-| Candidate/AI Service        | [http://localhost:8091](http://localhost:8091)                                 |
-| Subscription Service        | [http://localhost:8092](http://localhost:8092)                                 |
-| Notification Service        | [http://localhost:8094](http://localhost:8094)                                 |
-| Analytics Service           | [http://localhost:8095](http://localhost:8095)                                 |
 | Kafka UI                    | [http://localhost:8081](http://localhost:8081)                                 |
 | MinIO Console               | [http://localhost:9003](http://localhost:9003)                                 |
 | pgAdmin                     | [http://localhost:5050](http://localhost:5050)                                 |
@@ -133,15 +122,9 @@ When the containers are running, use these addresses.
 | MinIO S3 API                | [http://localhost:9002](http://localhost:9002)                                 |
 | Swagger-ui                  | [http://localhost:8082/swagger-ui.html](http://localhost:8082/swagger-ui.html) |
 
-The candidate, subscription, notification and analytics APIs are available through the gateway at `http://localhost:8080/api/v1`. Direct service URLs above are useful for local Swagger UI and service diagnostics. The API Gateway forwards the JWT to each service, which validates authorization independently.
+> **Important:** These are the default addresses. To resolve a port conflict, change the corresponding port value in `.env` and restart the stack with `docker compose up -d`.
 
-### Frontend
-
-The Angular frontend is in the adjacent `SmartRecruit-Stitch-Angular` repository. Run it with `npm install` and `npm start`; its `/api` dev proxy forwards requests to the gateway on port 8080. For the production Nginx image, set `API_GATEWAY_HOST` to the gateway host and port (default `api-gateway:8080`) on the same Docker network.
-
-The Candidate/AI ATS scan uses a local deterministic skills and document-structure analyzer. Subscription charges use a mock payment adapter. Replace these adapters before enabling real AI processing or payments.
-
-Kafka consumers in Candidate/AI, Notification and Analytics share `DOMAIN_EVENTS_TOPIC`. The Recruitment and Interview service owners should publish the event envelope and payload fields documented in `docs/endpoints.md` so job recommendations, notifications and recruiter analytics can populate.
+> In case of port conflict, change the corresponding port value in `.env` and restart the stack with `docker compose --profile app up -d`. Keep application service ports aligned with each service's actual listening port.
 
 ### pgAdmin Server Configuration
 
@@ -151,17 +134,17 @@ When logging into pgAdmin at [http://localhost:5050](http://localhost:5050) (Ema
 
 Register each service database under **Servers > Register > Server...**:
 
-| Service | General: **Name** | Connection: **Host** | Connection: **Port** | Connection: **Maintenance DB** | Connection: **Username** | Connection: **Password** |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Identity** | `Identity DB` | `identity-db` | `5432` | `identity_db` | `smartrecruit` | `postgres` |
-| **Recruitment** | `Recruitment DB` | `recruitment-db` | `5432` | `recruitment_db` | `smartrecruit` | `postgres` |
-| **Candidate / AI** | `Candidate DB` | `candidate-db` | `5432` | `candidate_db` | `smartrecruit` | `postgres` |
-| **Subscription** | `Subscription DB` | `subscription-db` | `5432` | `subscription_db` | `smartrecruit` | `postgres` |
-| **Interview** | `Interview DB` | `interview-db` | `5432` | `interview_db` | `smartrecruit` | `postgres` |
-| **Notification** | `Notification DB` | `notification-db` | `5432` | `notification_db` | `smartrecruit` | `postgres` |
-| **Analytics** | `Analytics DB` | `analytics-db` | `5432` | `analytics_db` | `smartrecruit` | `postgres` |
+| Service            | General: **Name** | Connection: **Host** | Connection: **Port** | Connection: **Maintenance DB** | Connection: **Username** | Connection: **Password** |
+| :----------------- | :---------------- | :------------------- | :------------------- | :----------------------------- | :----------------------- | :----------------------- |
+| **Identity**       | `Identity DB`     | `identity-db`        | `5432`               | `identity_db`                  | `smartrecruit`           | `postgres`               |
+| **Recruitment**    | `Recruitment DB`  | `recruitment-db`     | `5432`               | `recruitment_db`               | `smartrecruit`           | `postgres`               |
+| **Candidate / AI** | `Candidate DB`    | `candidate-db`       | `5432`               | `candidate_db`                 | `smartrecruit`           | `postgres`               |
+| **Subscription**   | `Subscription DB` | `subscription-db`    | `5432`               | `subscription_db`              | `smartrecruit`           | `postgres`               |
+| **Interview**      | `Interview DB`    | `interview-db`       | `5432`               | `interview_db`                 | `smartrecruit`           | `postgres`               |
+| **Notification**   | `Notification DB` | `notification-db`    | `5432`               | `notification_db`              | `smartrecruit`           | `postgres`               |
+| **Analytics**      | `Analytics DB`    | `analytics-db`       | `5432`               | `analytics_db`                 | `smartrecruit`           | `postgres`               |
 
-*(Use the `POSTGRES_PASSWORD` from your `.env` file if customized).*
+_(Use the `POSTGRES_PASSWORD` from your `.env` file if customized)._
 
 ## 7. Initialize MinIO Storage
 
@@ -212,7 +195,8 @@ Check the affected port:
 netstat -ano | findstr :8080
 ```
 
-If a port is occupied, stop the conflicting application or update the corresponding port mapping in `docker-compose.yml`.
+If a port is occupied (in use), stop the conflicting application or change its corresponding port value in `.env`, then restart the stack with `docker compose up -d`.
+If a port is occupied, stop the conflicting application or change its corresponding port value in `.env`, then restart the stack with `docker compose --profile app up -d`.
 
 ---
 
@@ -221,12 +205,20 @@ If a port is occupied, stop the conflicting application or update the correspond
 Stop the containers without deleting local data:
 
 ```powershell
+# stop the containers only but keep the volumes
+docker compose stop
+# or
+# stop the containers and remove the containers but keep the volumes
 docker compose down
 ```
 
 Start them again later with:
 
 ```powershell
+# Start all containers including application services
+docker compose --profile app up -d
+
+# Or start only infrastructure containers
 docker compose up -d
 ```
 
@@ -240,7 +232,18 @@ Use this only when a clean development environment is required:
 docker compose down --volumes --remove-orphans
 docker compose down -v
 docker compose up --build -d
+docker compose --profile app up --build -d
 ```
+
+## "docker compose stop" vs "docker compose down" vs "docker compose down -v" command Summary
+
+| Command                  | Stops containers | Removes containers | Removes networks | Removes volumes         |
+| ------------------------ | ---------------- | ------------------ | ---------------- | ----------------------- |
+| `docker compose stop`    | ✅               | ❌                 | ❌               | ❌                      |
+| `docker compose down`    | ✅               | ✅                 | ✅               | ❌ (named volumes kept) |
+| `docker compose down -v` | ✅               | ✅                 | ✅               | ✅ (data deleted)       |
+
+---
 
 ## 12. Build and Cache Maintenance
 
@@ -304,3 +307,7 @@ docker exec -it smartrecruit-redis redis-cli --no-auth-warning -a "YOUR_REDIS_PA
 ```
 
 Replace `YOUR_REDIS_PASSWORD` with the value from your `.env` file. This deletes all keys in the selected Redis database, so use it only if that database contains disposable cache data.
+
+```
+
+```

@@ -1,104 +1,167 @@
 package com.smartrecruit.identity.service;
 
-import java.util.Comparator;
+import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.List;
-import java.util.Map;
+import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.smartrecruit.identity.dto.AdminCreateUserRequest;
 import com.smartrecruit.identity.dto.AdminUpdateUserRequest;
 import com.smartrecruit.identity.dto.UserResponse;
+import com.smartrecruit.identity.exception.StorageException;
 import com.smartrecruit.identity.model.AccountStatus;
+import com.smartrecruit.identity.model.Candidate;
+import com.smartrecruit.identity.model.PlatformAdministrator;
 import com.smartrecruit.identity.model.Recruiter;
 import com.smartrecruit.identity.model.User;
 import com.smartrecruit.identity.model.UserRole;
 import com.smartrecruit.identity.repository.UserRepository;
 import com.smartrecruit.identity.storage.EmploymentProofStorage;
+import com.smartrecruit.identity.storage.EmploymentProofStorage.StoredEmploymentProof;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Service
 public class AdminUserService {
 	private final UserRepository users;
-	private final EmploymentProofStorage storage;
+	private final PasswordEncoder passwordEncoder;
+	private final EmploymentProofStorage employmentProofStorage;
 
-	public AdminUserService(UserRepository users, EmploymentProofStorage storage) {
+	public AdminUserService(UserRepository users, PasswordEncoder passwordEncoder,
+			EmploymentProofStorage employmentProofStorage) {
 		this.users = users;
-		this.storage = storage;
+		this.passwordEncoder = passwordEncoder;
+		this.employmentProofStorage = employmentProofStorage;
+	}
+
+	@Transactional
+	public UserResponse create(AdminCreateUserRequest request, MultipartFile employmentProof) {
+		String email = request.email().trim().toLowerCase(Locale.ROOT);
+		if (users.existsByEmailIgnoreCase(email)) {
+			throw new EmailAlreadyRegisteredException();
+		}
+		if (request.password().getBytes(StandardCharsets.UTF_8).length > 72) {
+			throw new IllegalArgumentException("Password must be at most 72 UTF-8 bytes");
+		}
+
+		String passwordHash = passwordEncoder.encode(request.password());
+		User user;
+		if (request.role() == UserRole.CANDIDATE) {
+			if (employmentProof != null && !employmentProof.isEmpty()) {
+				throw new IllegalArgumentException("Employment proof is only accepted for recruiter accounts");
+			}
+			user = new Candidate(email, passwordHash, request.fullName().trim());
+		} else if (request.role() == UserRole.RECRUITER) {
+			if (employmentProof == null || employmentProof.isEmpty()) {
+				throw new IllegalArgumentException("Employment proof is required for recruiter accounts");
+			}
+			String proofKey = employmentProofStorage.store(employmentProof);
+			user = new Recruiter(email, passwordHash, request.fullName().trim(), proofKey);
+		} else {
+			if (employmentProof != null && !employmentProof.isEmpty()) {
+				throw new IllegalArgumentException("Employment proof is only accepted for recruiter accounts");
+			}
+			user = new PlatformAdministrator(email, passwordHash, request.fullName().trim());
+		}
+		user.setProfile(request.fullName().trim(), request.phone(), request.address(),
+				request.city(), request.state(), request.country(), request.postalCode());
+		try {
+			return UserResponse.from(users.saveAndFlush(user));
+		} catch (DataIntegrityViolationException exception) {
+			if (user instanceof Recruiter recruiter) {
+				try {
+					employmentProofStorage.delete(recruiter.getEmploymentProofObjectKey());
+				} catch (StorageException cleanupException) {
+					throw cleanupException;
+				}
+			}
+			if (isUniqueConstraintViolation(exception)) {
+				throw new EmailAlreadyRegisteredException();
+			}
+			throw exception;
+		}
 	}
 
 	@Transactional(readOnly = true)
-	public List<UserResponse> list() {
-		return users.findAll().stream()
-				.sorted(Comparator.comparing(User::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
-				.map(UserResponse::from).toList();
+	public List<UserResponse> getAll() {
+		return users.findAll().stream().map(UserResponse::from).toList();
 	}
 
 	@Transactional(readOnly = true)
 	public UserResponse get(UUID id) {
-		return UserResponse.from(find(id));
+		return UserResponse.from(findUser(id));
+	}
+
+	@Transactional(readOnly = true)
+	public List<UserResponse> getPendingRecruiters() {
+		return users.findByRoleAndStatus(UserRole.RECRUITER, AccountStatus.PENDING)
+				.stream().map(UserResponse::from).toList();
 	}
 
 	@Transactional
-	public UserResponse update(UUID id, AdminUpdateUserRequest request, UUID actingAdminId) {
-		User user = find(id);
-		if (request.fullName() != null || request.phone() != null || request.address() != null || request.city() != null
-				|| request.state() != null || request.country() != null || request.postalCode() != null) {
-			String name = request.fullName() == null ? user.getFullName() : request.fullName().trim();
-			if (name.isBlank()) throw new IllegalArgumentException("Full name is required");
-			user.setProfile(name, or(request.phone(), user.getPhone()), or(request.address(), user.getAddress()),
-					or(request.city(), user.getCity()), or(request.state(), user.getState()),
-					or(request.country(), user.getCountry()), or(request.postalCode(), user.getPostalCode()));
+	public UserResponse approveRecruiter(UUID id) {
+		return decideRecruiter(id, AccountStatus.ACTIVE);
+	}
+
+	@Transactional
+	public UserResponse rejectRecruiter(UUID id) {
+		return decideRecruiter(id, AccountStatus.REJECTED);
+	}
+
+	@Transactional(readOnly = true)
+	public StoredEmploymentProof getEmploymentProof(UUID id) {
+		User user = findUser(id);
+		if (!(user instanceof Recruiter recruiter)) {
+			throw new IllegalArgumentException("Employment proof is only available for recruiter accounts");
 		}
-		if (request.status() != null && request.status() != user.getStatus()) {
-			if (user.getId().equals(actingAdminId)) throw new IllegalStateException("You cannot change the status of your own account");
-			if (user.getRole() == UserRole.PLATFORM_ADMINISTRATOR && request.status() != AccountStatus.ACTIVE
-					&& activeAdmins() <= 1) throw new IllegalStateException("At least one active administrator is required");
-			setStatus(user, request.status());
+		return employmentProofStorage.retrieve(recruiter.getEmploymentProofObjectKey());
+	}
+
+	@Transactional
+	public UserResponse update(UUID id, AdminUpdateUserRequest request) {
+		User user = findUser(id);
+		user.setProfile(request.fullName().trim(), request.phone(), request.address(),
+				request.city(), request.state(), request.country(), request.postalCode());
+		if (user instanceof Recruiter recruiter) {
+			recruiter.setApprovalStatus(request.status());
+		} else {
+			user.setStatus(request.status());
 		}
 		return UserResponse.from(users.save(user));
 	}
 
 	@Transactional
-	public UserResponse approve(UUID id) {
-		Recruiter recruiter = recruiter(id);
-		recruiter.setApprovalStatus(AccountStatus.ACTIVE);
-		return UserResponse.from(users.save(recruiter));
+	public void delete(UUID id) {
+		User user = findUser(id);
+		if (user instanceof Recruiter recruiter) {
+			employmentProofStorage.delete(recruiter.getEmploymentProofObjectKey());
+		}
+		users.delete(user);
 	}
 
-	@Transactional
-	public UserResponse reject(UUID id) {
-		Recruiter recruiter = recruiter(id);
-		recruiter.setApprovalStatus(AccountStatus.REJECTED);
-		return UserResponse.from(users.save(recruiter));
-	}
-
-	@Transactional(readOnly = true)
-	public Map<String, String> employmentProof(UUID id) {
-		Recruiter recruiter = recruiter(id);
-		return Map.of("userId", id.toString(), "url", storage.temporaryUrl(recruiter.getEmploymentProofObjectKey()));
-	}
-
-	private static void setStatus(User user, AccountStatus status) {
-		if (user instanceof Recruiter recruiter) recruiter.setApprovalStatus(status);
-		else user.setStatus(status);
-	}
-
-	private long activeAdmins() {
-		return users.findAll().stream()
-				.filter(u -> u.getRole() == UserRole.PLATFORM_ADMINISTRATOR && u.getStatus() == AccountStatus.ACTIVE).count();
-	}
-
-	private Recruiter recruiter(UUID id) {
-		if (find(id) instanceof Recruiter recruiter) return recruiter;
-		throw new IllegalArgumentException("This account is not a recruiter");
-	}
-
-	private User find(UUID id) {
+	private User findUser(UUID id) {
 		return users.findById(id).orElseThrow(UserNotFoundException::new);
 	}
 
-	private static String or(String value, String fallback) {
-		return value == null ? fallback : value.isBlank() ? null : value.trim();
+	private UserResponse decideRecruiter(UUID id, AccountStatus decision) {
+		User user = findUser(id);
+		if (!(user instanceof Recruiter recruiter)) {
+			throw new IllegalArgumentException("Approval decisions are only available for recruiter accounts");
+		}
+		if (recruiter.getApprovalStatus() != AccountStatus.PENDING) {
+			throw new IllegalArgumentException("Only pending recruiter accounts can be reviewed");
+		}
+		recruiter.setApprovalStatus(decision);
+		return UserResponse.from(users.save(recruiter));
+	}
+
+	private static boolean isUniqueConstraintViolation(DataIntegrityViolationException exception) {
+		Throwable cause = exception.getMostSpecificCause();
+		return cause instanceof SQLException sqlException && "23505".equals(sqlException.getSQLState());
 	}
 }

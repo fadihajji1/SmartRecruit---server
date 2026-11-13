@@ -2,7 +2,17 @@ package com.smartrecruit.identity.dto;
 
 import com.smartrecruit.identity.model.AccountStatus;
 
-/** Partial update sent by the admin console: every field is optional. */
-public record AdminUpdateUserRequest(String fullName, String phone, String address, String city, String state,
-		String country, String postalCode, AccountStatus status) {
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
+public record AdminUpdateUserRequest(
+		@NotBlank @Size(max = 100) String fullName,
+		@Size(max = 32) String phone,
+		@Size(max = 255) String address,
+		@Size(max = 100) String city,
+		@Size(max = 100) String state,
+		@Size(max = 100) String country,
+		@Size(max = 32) String postalCode,
+		@NotNull AccountStatus status) {
 }
