@@ -8,9 +8,9 @@ import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusReactiveJwtDecoder;
@@ -35,11 +35,8 @@ public class GatewaySecurityConfiguration {
 		return http
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
 				.authorizeExchange(authorize -> authorize
-						.pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-						.pathMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register/candidate",
-								"/api/v1/auth/register/recruiter").permitAll()
-						.pathMatchers(HttpMethod.GET, "/api/v1/jobs", "/api/v1/jobs/**",
-								"/api/v1/subscriptions/plans").permitAll()
+						.pathMatchers("/api/v1/auth/**").permitAll()
+						.pathMatchers(HttpMethod.GET, "/api/v1/jobs", "/api/v1/jobs/**").permitAll()
 						.anyExchange().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
 				.build();

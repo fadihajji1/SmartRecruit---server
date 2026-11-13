@@ -20,9 +20,9 @@ spring:
                 - Path=/api/v1/auth/**,/api/v1/users/**,/api/v1/recruiters/**,/api/v1/admin/users/**,/api/v1/admin/recruiters/**
 
             - id: recruitment-service
-              uri: ${RECRUITMENT_SERVICE_URL:http://localhost:8090}
+              uri: ${RECRUITMENT_SERVICE_URL:http://localhost:8083}
               predicates:
-                - Path=/api/v1/jobs/**,/api/v1/applications/**,/api/v1/businesses/**,/api/v1/recruiter/businesses/**,/api/v1/recruiter/jobs/**,/api/v1/recruiter/applications/**,/api/v1/candidate/applications/**,/api/v1/admin/businesses/**,/api/v1/admin/jobs/**,/api/v1/admin/recruitment/**
+                - Path=/api/v1/jobs/**,/api/v1/applications/**,/api/v1/businesses/**,/api/v1/recruiter/**,/api/v1/candidate/applications/**,/api/v1/admin/businesses/**,/api/v1/admin/jobs/**,/api/v1/admin/recruitment/**
 
             - id: candidate-ai-service
               uri: ${CANDIDATE_AI_SERVICE_URL:http://localhost:8091}
