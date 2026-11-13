@@ -231,7 +231,7 @@ services:
     container_name: smartrecruit-recruitment-service
     restart: unless-stopped
     environment:
-      SERVER_PORT: ${RECRUITMENT_SERVICE_PORT:-8080}
+      RECRUITMENT_SERVICE_PORT: ${RECRUITMENT_SERVICE_PORT:-8083}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
       RECRUITMENT_DB_URL: jdbc:postgresql://recruitment-db:5432/recruitment_db
@@ -239,7 +239,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       KAFKA_BOOTSTRAP_SERVERS: kafka:19092
     ports:
-      - "${RECRUITMENT_SERVICE_HOST_PORT:-8090}:${RECRUITMENT_SERVICE_PORT:-8080}"
+      - "${RECRUITMENT_SERVICE_PORT:-8083}:${RECRUITMENT_SERVICE_PORT:-8083}"
     depends_on:
       recruitment-db:
         condition: service_healthy
@@ -261,7 +261,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
       IDENTITY_SERVICE_URL: http://identity-service:${IDENTITY_SERVICE_PORT:-8082}
-      RECRUITMENT_SERVICE_URL: http://recruitment-service:${RECRUITMENT_SERVICE_PORT:-8080}
+      RECRUITMENT_SERVICE_URL: http://recruitment-service:${RECRUITMENT_SERVICE_PORT:-8083}
       CANDIDATE_AI_SERVICE_URL: http://candidate-ai-service:${CANDIDATE_AI_SERVICE_PORT:-8080}
       SUBSCRIPTION_SERVICE_URL: http://subscription-service:${SUBSCRIPTION_SERVICE_PORT:-8080}
       INTERVIEW_SERVICE_URL: http://interview-service:${INTERVIEW_SERVICE_PORT:-8080}

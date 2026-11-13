@@ -24,7 +24,7 @@ spring:
         spring.json.add.type.headers: false
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${RECRUITMENT_SERVICE_PORT:8083}
 
 identity:
   jwt:
