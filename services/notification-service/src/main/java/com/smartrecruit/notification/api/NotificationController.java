@@ -39,6 +39,12 @@ public class NotificationController {
         return service.list(actorId(jwt), PageRequest.of(page, size));
     }
 
+    @GetMapping("/unread-count") @Operation(summary = "Count my unread notifications")
+    public java.util.Map<String, Long> unreadCount(@AuthenticationPrincipal Jwt jwt) { return java.util.Map.of("unread", service.unreadCount(actorId(jwt))); }
+
+    @org.springframework.web.bind.annotation.PostMapping("/read-all") @Operation(summary = "Mark all my notifications read")
+    public java.util.Map<String, Integer> readAll(@AuthenticationPrincipal Jwt jwt) { return java.util.Map.of("updated", service.readAll(actorId(jwt))); }
+
     @PatchMapping("/{notificationId}/read") @Operation(summary = "Mark a notification read")
     public NotificationResponse read(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID notificationId) { return service.read(actorId(jwt), notificationId); }
 

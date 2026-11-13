@@ -10,5 +10,7 @@ import com.smartrecruit.notification.domain.Notification;
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
     Page<Notification> findAllByRecipientUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(UUID recipientUserId, Pageable pageable);
     Optional<Notification> findByIdAndRecipientUserIdAndDeletedAtIsNull(UUID id, UUID recipientUserId);
+    long countByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(UUID recipientUserId);
+    java.util.List<Notification> findAllByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(UUID recipientUserId);
     boolean existsBySourceEventIdAndRecipientUserId(UUID sourceEventId, UUID recipientUserId);
 }

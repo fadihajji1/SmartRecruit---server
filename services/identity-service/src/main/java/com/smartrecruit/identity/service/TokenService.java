@@ -33,6 +33,7 @@ public class TokenService {
 				.expiresAt(expiresAt)
 				.subject(user.getEmail())
 				.claim("user_id", user.getId().toString())
+				.claim("name", user.getFullName())
 				.claim("roles", List.of(user.getRole().name()))
 				.build();
 		JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();

@@ -22,6 +22,17 @@ public class NotificationService {
         return notifications.findAllByRecipientUserIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId, pageable).map(NotificationResponse::from);
     }
 
+    @Transactional(readOnly = true)
+    public long unreadCount(UUID userId) { return notifications.countByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(userId); }
+
+    @Transactional
+    public int readAll(UUID userId) {
+        var unread = notifications.findAllByRecipientUserIdAndDeletedAtIsNullAndReadAtIsNull(userId);
+        unread.forEach(Notification::markRead);
+        notifications.saveAll(unread);
+        return unread.size();
+    }
+
     @Transactional
     public NotificationResponse read(UUID userId, UUID notificationId) {
         Notification item = owned(userId, notificationId); item.markRead(); return NotificationResponse.from(notifications.save(item));

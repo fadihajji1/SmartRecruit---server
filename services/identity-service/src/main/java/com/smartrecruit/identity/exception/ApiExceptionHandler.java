@@ -26,6 +26,12 @@ public class ApiExceptionHandler {
 		return error(HttpStatus.CONFLICT, "EMAIL_ALREADY_REGISTERED", exception.getMessage(), request);
 	}
 
+	@ExceptionHandler(com.smartrecruit.identity.service.AccountNotActiveException.class)
+	ResponseEntity<ApiError> accountNotActive(com.smartrecruit.identity.service.AccountNotActiveException exception,
+			HttpServletRequest request) {
+		return error(HttpStatus.FORBIDDEN, "ACCOUNT_" + exception.getStatus().name(), exception.getMessage(), request);
+	}
+
 	@ExceptionHandler(AuthenticationException.class)
 	ResponseEntity<ApiError> authenticationFailure(HttpServletRequest request) {
 		return error(HttpStatus.UNAUTHORIZED, "AUTHENTICATION_FAILED", "Invalid credentials or inactive account",
@@ -50,6 +56,16 @@ public class ApiExceptionHandler {
 	@ExceptionHandler(UserNotFoundException.class)
 	ResponseEntity<ApiError> userNotFound(UserNotFoundException exception, HttpServletRequest request) {
 		return error(HttpStatus.NOT_FOUND, "USER_NOT_FOUND", exception.getMessage(), request);
+	}
+
+	@ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+	ResponseEntity<ApiError> accessDenied(Exception exception, HttpServletRequest request) {
+		return error(HttpStatus.FORBIDDEN, "ACCESS_DENIED", "You do not have access to this resource", request);
+	}
+
+	@ExceptionHandler(IllegalStateException.class)
+	ResponseEntity<ApiError> conflict(IllegalStateException exception, HttpServletRequest request) {
+		return error(HttpStatus.CONFLICT, "INVALID_STATE", exception.getMessage(), request);
 	}
 
 	@ExceptionHandler(StorageException.class)

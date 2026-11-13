@@ -100,7 +100,7 @@ public class SubscriptionService {
         Subscription subscription = subscriptions.save(new Subscription(ownerId, audience, plan,
             trial ? SubscriptionStatus.TRIALING : SubscriptionStatus.ACTIVE, now, endsAt, request.autoRenew()));
         if (!trial) charge(subscription, plan, "subscription start");
-        record(subscription, ownerId, "CREATED", null, null, null, plan.getPlanCode(), null);
+        record(subscription, ownerId, "CREATED", null, subscription.getStatus().name(), null, plan.getPlanCode(), null);
         return SubscriptionResponse.from(subscription);
     }
 

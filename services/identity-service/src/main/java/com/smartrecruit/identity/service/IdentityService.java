@@ -111,6 +111,12 @@ public class IdentityService {
 
 	public TokenResponse login(LoginRequest request) {
 		String email = normalizeEmail(request.email());
+		users.findByEmailIgnoreCase(email).ifPresent(existing -> {
+			if (existing.getStatus() != com.smartrecruit.identity.model.AccountStatus.ACTIVE
+					&& request.password() != null && passwordEncoder.matches(request.password(), existing.getPassword())) {
+				throw new AccountNotActiveException(existing.getStatus());
+			}
+		});
 		Authentication authentication = authenticationManager.authenticate(
 				new UsernamePasswordAuthenticationToken(email, request.password()));
 		User user = (User) authentication.getPrincipal();

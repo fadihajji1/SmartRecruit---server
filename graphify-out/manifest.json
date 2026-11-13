@@ -1,0 +1,1130 @@
+{
+  "docker-compose.yml": {
+    "mtime": 1794528852.4192867,
+    "seen": 1794563161.0728633,
+    "ast_hash": "fa22131a059ce778cf352c892103ea51",
+    "semantic_hash": ""
+  },
+  "kubernetes/analytics-service.yaml": {
+    "mtime": 1794507000.362379,
+    "seen": 1794563161.072868,
+    "ast_hash": "2800469dca5814ce7fbe94ef9d24f511",
+    "semantic_hash": ""
+  },
+  "kubernetes/api-gateway/api-gateway-deployment.yaml": {
+    "mtime": 1794507000.3628974,
+    "seen": 1794563161.0728705,
+    "ast_hash": "8d3078e8bdda9c84704ff23f9195e7d8",
+    "semantic_hash": ""
+  },
+  "kubernetes/api-gateway/api-gateway-service.yaml": {
+    "mtime": 1794507000.3634124,
+    "seen": 1794563161.0728722,
+    "ast_hash": "ef491413099e8811e04ff74ab3cd6ef2",
+    "semantic_hash": ""
+  },
+  "kubernetes/candidate-ai-service.yaml": {
+    "mtime": 1794507000.3639388,
+    "seen": 1794563161.0728738,
+    "ast_hash": "e5ffaa45a21891aa0477adc90907de5b",
+    "semantic_hash": ""
+  },
+  "kubernetes/identity-service.yaml": {
+    "mtime": 1794507000.3644564,
+    "seen": 1794563161.0728753,
+    "ast_hash": "059beafabd98a0536a87a2d1777a1669",
+    "semantic_hash": ""
+  },
+  "kubernetes/interview-service.yaml": {
+    "mtime": 1794507000.3644564,
+    "seen": 1794563161.0728772,
+    "ast_hash": "d2f175cfd7b48669940cf6aa3d2c0cfb",
+    "semantic_hash": ""
+  },
+  "kubernetes/notification-service.yaml": {
+    "mtime": 1794507000.3649719,
+    "seen": 1794563161.0728784,
+    "ast_hash": "e5ab93a8255a976e6b01161cacac5880",
+    "semantic_hash": ""
+  },
+  "kubernetes/recruitment-service.yaml": {
+    "mtime": 1794507000.365488,
+    "seen": 1794563161.0728798,
+    "ast_hash": "03a2b3906252740a7ae6e8ecee0a963f",
+    "semantic_hash": ""
+  },
+  "kubernetes/subscription-service.yaml": {
+    "mtime": 1794507000.3660047,
+    "seen": 1794563161.0728812,
+    "ast_hash": "ff5878b8e5ea39de6b8dcf20def9e46a",
+    "semantic_hash": ""
+  },
+  "mvnw": {
+    "mtime": 1794507000.3665266,
+    "seen": 1794563161.0728827,
+    "ast_hash": "ab50dd89da7da2346b28003352eeeeeb",
+    "semantic_hash": ""
+  },
+  "pom.xml": {
+    "mtime": 1794507000.3680766,
+    "seen": 1794563161.0728843,
+    "ast_hash": "550f3acd2d1980f11a61281a61a0e8b0",
+    "semantic_hash": ""
+  },
+  "seed-demo.mjs": {
+    "mtime": 1794527050.745213,
+    "seen": 1794563161.0728855,
+    "ast_hash": "047b83b6e7be4189631a0c29ca6297bb",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/pom.xml": {
+    "mtime": 1794507627.6169233,
+    "seen": 1794563161.072887,
+    "ast_hash": "8de9a50ff9b3d230af371b5a5a058b51",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/AnalyticsServiceApplication.java": {
+    "mtime": 1794507000.3732464,
+    "seen": 1794563161.0728886,
+    "ast_hash": "1da21a0cfca06525158d74de392da0cc",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/api/AnalyticsController.java": {
+    "mtime": 1794509894.3408594,
+    "seen": 1794563161.0728903,
+    "ast_hash": "09dfa4144cc6beb98b123dc015ad1a62",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/api/ApiExceptionHandler.java": {
+    "mtime": 1794509725.0026636,
+    "seen": 1794563161.0728917,
+    "ast_hash": "5239ffc3fa0f488f05ec6aa24b7854bb",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/config/ApiSecurityConfiguration.java": {
+    "mtime": 1794509725.0000632,
+    "seen": 1794563161.0728934,
+    "ast_hash": "4d28f87a31c0168e84d1822626364c70",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/config/KafkaConfiguration.java": {
+    "mtime": 1794524539.672846,
+    "seen": 1794563161.0728948,
+    "ast_hash": "caa99528ff9f5b914e4153048a18a18d",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/domain/AnalyticsEvent.java": {
+    "mtime": 1794509725.0057752,
+    "seen": 1794563161.0728962,
+    "ast_hash": "3a16b52e4bdba97aeddebb739d8c03da",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/dto/AnalyticsOverviewResponse.java": {
+    "mtime": 1794509753.02622,
+    "seen": 1794563161.072898,
+    "ast_hash": "76228c44bf6ce9c0b0bca66f69bd5af7",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/dto/ApplicationMetricResponse.java": {
+    "mtime": 1794509753.032132,
+    "seen": 1794563161.072908,
+    "ast_hash": "7544f3978b9b08e6bcea915403a636a2",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/dto/OfferMetricResponse.java": {
+    "mtime": 1794509753.0293984,
+    "seen": 1794563161.0729113,
+    "ast_hash": "7d286d2b25b3246c7b5c0b31f7c58387",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/events/AnalyticsEventConsumer.java": {
+    "mtime": 1794509894.3429189,
+    "seen": 1794563161.072913,
+    "ast_hash": "5068195686cc5ef7dd874279132fad22",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/repo/AnalyticsEventRepository.java": {
+    "mtime": 1794509836.377949,
+    "seen": 1794563161.0729144,
+    "ast_hash": "546bc19af10160cd60017e906239413e",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/service/AnalyticsService.java": {
+    "mtime": 1794509836.37953,
+    "seen": 1794563161.072916,
+    "ast_hash": "bae157f462d0b139f103859763ce43f5",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/main/java/com/smartrecruit/analytics/service/PdfReportWriter.java": {
+    "mtime": 1794509855.510023,
+    "seen": 1794563161.0729177,
+    "ast_hash": "8a6be8f9ac4f6b6aff6c5d9645d64338",
+    "semantic_hash": ""
+  },
+  "services/analytics-service/src/test/java/com/smartrecruit/analytics/ApiDocumentationTests.java": {
+    "mtime": 1794507000.376915,
+    "seen": 1794563161.0729191,
+    "ast_hash": "8d6c6fad7a35d9aae8ae7bc9f68a1f7b",
+    "semantic_hash": ""
+  },
+  "services/api-gateway/pom.xml": {
+    "mtime": 1794507000.3784583,
+    "seen": 1794563161.0729206,
+    "ast_hash": "9d550124909abd806c6e2ecc34a201b0",
+    "semantic_hash": ""
+  },
+  "services/api-gateway/src/main/java/com/smartrecruit/gateway/ApiGatewayApplication.java": {
+    "mtime": 1794507000.380513,
+    "seen": 1794563161.0729225,
+    "ast_hash": "757616edab5527ea1ed7e78d63d33e9b",
+    "semantic_hash": ""
+  },
+  "services/api-gateway/src/main/java/com/smartrecruit/gateway/GatewaySecurityConfiguration.java": {
+    "mtime": 1794510813.027563,
+    "seen": 1794563161.0729237,
+    "ast_hash": "500a04c0057a09aa50a4c7be7c706897",
+    "semantic_hash": ""
+  },
+  "services/api-gateway/src/main/resources/application.yml": {
+    "mtime": 1794524735.4218767,
+    "seen": 1794563161.072925,
+    "ast_hash": "54898a32547cddbdfaa26de7a16441ed",
+    "semantic_hash": ""
+  },
+  "services/api-gateway/src/test/java/com/smartrecruit/gateway/ApiGatewayApplicationTests.java": {
+    "mtime": 1794507000.3841379,
+    "seen": 1794563161.0729268,
+    "ast_hash": "dfc4d50498a1ad60f69ed0868da4e8d8",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/pom.xml": {
+    "mtime": 1794510422.8853185,
+    "seen": 1794563161.072928,
+    "ast_hash": "7c2bc9f4ac4385bdc35ddb69d6f29502",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/CandidateAiServiceApplication.java": {
+    "mtime": 1794507670.1438425,
+    "seen": 1794563161.0729299,
+    "ast_hash": "4093f50cbb4d9dc1289b2af814e6cada",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/api/ApiExceptionHandler.java": {
+    "mtime": 1794508161.8041835,
+    "seen": 1794563161.0729313,
+    "ast_hash": "5297eaec93905723719cc7a41ad2e708",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/api/CvController.java": {
+    "mtime": 1794509531.7724378,
+    "seen": 1794563161.0729334,
+    "ast_hash": "3e69c20bc89fd6215fe1b8fd69ccb60d",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/config/ApiSecurityConfiguration.java": {
+    "mtime": 1794508161.8026474,
+    "seen": 1794563161.0729349,
+    "ast_hash": "23f2e5f488f5ca4f7afc7b264f60fa1b",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/config/KafkaConfiguration.java": {
+    "mtime": 1794524539.8018649,
+    "seen": 1794563161.0729365,
+    "ast_hash": "1c9df3ed9ce71918c303ba60e703b209",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/config/MinioConfiguration.java": {
+    "mtime": 1794508161.8046956,
+    "seen": 1794563161.072938,
+    "ast_hash": "dd5d218f018db234ec501f135fb3143f",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/domain/AnalysisStatus.java": {
+    "mtime": 1794509301.8686519,
+    "seen": 1794563161.0729396,
+    "ast_hash": "05979994bc39930a70914f8d029b1592",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/domain/CandidateCv.java": {
+    "mtime": 1794509301.8702033,
+    "seen": 1794563161.072941,
+    "ast_hash": "52b440ff6863522dc5c9daff8fdf23f3",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/domain/CvAnalysis.java": {
+    "mtime": 1794509301.8712478,
+    "seen": 1794563161.0729425,
+    "ast_hash": "9a475f2d2cc1342daee58ccc42ac9c18",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/domain/CvStatus.java": {
+    "mtime": 1794509301.8676078,
+    "seen": 1794563161.0729449,
+    "ast_hash": "39d1aa1de8a31c4eafb01f988aec4c7e",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/domain/JobProjection.java": {
+    "mtime": 1794509301.872797,
+    "seen": 1794563161.0729465,
+    "ast_hash": "fb643a21c8e0f688f8c2bfd409b67590",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/dto/CandidateCvResponse.java": {
+    "mtime": 1794509333.6731627,
+    "seen": 1794563161.0729496,
+    "ast_hash": "c898e5a67dd5f04f4f95847c37cd9e65",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/dto/CvAnalysisRequest.java": {
+    "mtime": 1794509333.6741948,
+    "seen": 1794563161.0729513,
+    "ast_hash": "0aac840a3f531252cfb29955050198f7",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/dto/CvAnalysisResponse.java": {
+    "mtime": 1794509333.6752334,
+    "seen": 1794563161.0729527,
+    "ast_hash": "8554ec75fc6d1bfbd9c264aec5b452c9",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/dto/RecommendationResponse.java": {
+    "mtime": 1794509333.6762815,
+    "seen": 1794563161.0729544,
+    "ast_hash": "d02b6b17224ebb3aa05708f6a6d1e431",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/events/JobEventConsumer.java": {
+    "mtime": 1794509531.7745118,
+    "seen": 1794563161.0729558,
+    "ast_hash": "9633bd9035ecad7540ebda1efa6957d4",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/repository/CandidateCvRepository.java": {
+    "mtime": 1794509333.6643212,
+    "seen": 1794563161.0729575,
+    "ast_hash": "f387d90571256067aefba0658cb0a7d1",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/repository/CvAnalysisRepository.java": {
+    "mtime": 1794509333.6664803,
+    "seen": 1794563161.072959,
+    "ast_hash": "6ef8503dd2a31d8bbfa5ed3e8fe59abb",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/repository/JobProjectionRepository.java": {
+    "mtime": 1794509333.6705387,
+    "seen": 1794563161.0729606,
+    "ast_hash": "827832cac2e051273887afaf523c0fdb",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/service/CandidateAiService.java": {
+    "mtime": 1794511127.4737046,
+    "seen": 1794563161.072962,
+    "ast_hash": "08ed769bdc8a5dc90d1d8d829df9920f",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/service/CvObjectStorage.java": {
+    "mtime": 1794509395.0817585,
+    "seen": 1794563161.0729635,
+    "ast_hash": "240e661dcd306eb3591aee9fdc3c0ac4",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/service/HeuristicResumeAnalysisProvider.java": {
+    "mtime": 1794509395.0864112,
+    "seen": 1794563161.0729651,
+    "ast_hash": "a5fa662ddd38bf8c87e0986e19fc5654",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/service/ResumeAnalysis.java": {
+    "mtime": 1794509395.0827796,
+    "seen": 1794563161.0729666,
+    "ast_hash": "4ad7579673b61583211aed72bd3fb5e5",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/main/java/com/smartrecruit/candidateai/service/ResumeAnalysisProvider.java": {
+    "mtime": 1794509395.083811,
+    "seen": 1794563161.0729682,
+    "ast_hash": "bc9423a7cf7e799ac1ba5e3682f4f66f",
+    "semantic_hash": ""
+  },
+  "services/candidate-ai-service/src/test/java/com/smartrecruit/candidateai/ApiDocumentationTests.java": {
+    "mtime": 1794507000.3910007,
+    "seen": 1794563161.0729694,
+    "ast_hash": "4e262e50baaebf29f3e2d0a1f7f5c446",
+    "semantic_hash": ""
+  },
+  "services/identity-service/pom.xml": {
+    "mtime": 1794507000.3920555,
+    "seen": 1794563161.072971,
+    "ast_hash": "c8e3afeb4ec2b3d4137c46eaf44aeadc",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/IdentityServiceApplication.java": {
+    "mtime": 1794507000.394657,
+    "seen": 1794563161.0729725,
+    "ast_hash": "553771b82357c366118cfe7a303f829c",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/config/IdentitySecurityProperties.java": {
+    "mtime": 1794507000.3956888,
+    "seen": 1794563161.072974,
+    "ast_hash": "fc72340f952c675af557d0235d230689",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/config/MinioConfiguration.java": {
+    "mtime": 1794507000.3962138,
+    "seen": 1794563161.0729756,
+    "ast_hash": "a7ff205e02de5d29dc4837af2850c72a",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/config/MinioProperties.java": {
+    "mtime": 1794507000.3967352,
+    "seen": 1794563161.0729773,
+    "ast_hash": "115104890c6196f66b87479f2f519687",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/config/OpenApiConfiguration.java": {
+    "mtime": 1794507000.3967352,
+    "seen": 1794563161.0729787,
+    "ast_hash": "c2cc83fadcfaa8e447ec9baca280c17a",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/config/SecurityConfiguration.java": {
+    "mtime": 1794507000.3972485,
+    "seen": 1794563161.0729802,
+    "ast_hash": "4d40f405ccfc9f57b7289f718fb1d2fd",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/controller/AdminUserController.java": {
+    "mtime": 1794524663.4303243,
+    "seen": 1794563161.0729818,
+    "ast_hash": "fc2887104dc2b9badb3b013f7ea05db5",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java": {
+    "mtime": 1794507000.3977633,
+    "seen": 1794563161.0729833,
+    "ast_hash": "370c7cac0ed9b5c34ad035fbeab47f1e",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/AdminUpdateUserRequest.java": {
+    "mtime": 1794524663.2931106,
+    "seen": 1794563161.0729866,
+    "ast_hash": "010fcc7773083907b9255c5f67ee48ab",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/ApiError.java": {
+    "mtime": 1794507000.398795,
+    "seen": 1794563161.0729883,
+    "ast_hash": "c9e94b984a7c9f8c0943a4b950f58f7b",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/CandidateRegistrationRequest.java": {
+    "mtime": 1794507000.3993106,
+    "seen": 1794563161.07299,
+    "ast_hash": "97198797e1d240ae10ab233f0567535e",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/LoginRequest.java": {
+    "mtime": 1794507000.3993106,
+    "seen": 1794563161.072992,
+    "ast_hash": "5e7179acc160d7ff1156b850aaa0d27d",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/RecruiterRegistrationRequest.java": {
+    "mtime": 1794507000.3998244,
+    "seen": 1794563161.0729933,
+    "ast_hash": "5ad3065c2dead9b8584c31362d5de1e1",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/TokenResponse.java": {
+    "mtime": 1794507000.4003386,
+    "seen": 1794563161.0729947,
+    "ast_hash": "5a0a6a51da0439087586fe6dbde6dc56",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/UpdateProfileRequest.java": {
+    "mtime": 1794507000.400852,
+    "seen": 1794563161.0729964,
+    "ast_hash": "304a7be49344fcd8c012d2defcf4fbb0",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/dto/UserResponse.java": {
+    "mtime": 1794507000.401368,
+    "seen": 1794563161.072998,
+    "ast_hash": "8c6fce1543178db0ea7e94dd681c3dda",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/exception/ApiExceptionHandler.java": {
+    "mtime": 1794525984.652303,
+    "seen": 1794563161.0729997,
+    "ast_hash": "538bef9ba9b7b7ce84d56e640284fb94",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/exception/StorageException.java": {
+    "mtime": 1794507000.4029245,
+    "seen": 1794563161.0730014,
+    "ast_hash": "6c6c4a68946560243fffe0d532cbb1a6",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/model/AccountStatus.java": {
+    "mtime": 1794524662.8564036,
+    "seen": 1794563161.073003,
+    "ast_hash": "8cb9f39f86d494b4098023559cb70712",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/model/Candidate.java": {
+    "mtime": 1794507000.4045668,
+    "seen": 1794563161.0730047,
+    "ast_hash": "f552a7f7a6bd103d3fb4094c4ae3df56",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/model/PlatformAdministrator.java": {
+    "mtime": 1794507000.4050865,
+    "seen": 1794563161.0730064,
+    "ast_hash": "634d9bf15acfa0af9385a28f3dc33ab9",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/model/Recruiter.java": {
+    "mtime": 1794524663.003154,
+    "seen": 1794563161.073008,
+    "ast_hash": "edf9031c07fd34989e9603c13bf9d097",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/model/User.java": {
+    "mtime": 1794524681.1881452,
+    "seen": 1794563161.0730095,
+    "ast_hash": "88404c95a3bfb4ced988ba107832a1d6",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/model/UserRole.java": {
+    "mtime": 1794507000.4066525,
+    "seen": 1794563161.073011,
+    "ast_hash": "5330ecf4670d9a784d3f8760d54bc642",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/repository/UserRepository.java": {
+    "mtime": 1794507000.407689,
+    "seen": 1794563161.0730126,
+    "ast_hash": "5825d62a7ed061e5d85c03173c737116",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/service/AccountNotActiveException.java": {
+    "mtime": 1794525984.343468,
+    "seen": 1794563161.073014,
+    "ast_hash": "dc8802de117b9205752827d3aeaf863e",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/service/AdminUserService.java": {
+    "mtime": 1794524663.3569367,
+    "seen": 1794563161.0730166,
+    "ast_hash": "bf60ddda332f7a53f3981f973fda0288",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/service/EmailAlreadyRegisteredException.java": {
+    "mtime": 1794507000.408202,
+    "seen": 1794563161.073018,
+    "ast_hash": "98ba24d05018a21e5dff06c416fcd292",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java": {
+    "mtime": 1794525984.4272501,
+    "seen": 1794563161.07302,
+    "ast_hash": "dd18b7cc0e9c274002a6e7f44e1bde11",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/service/PlatformAdministratorBootstrap.java": {
+    "mtime": 1794524681.4434493,
+    "seen": 1794563161.0730214,
+    "ast_hash": "c4fea1183b9067818169d4f3d58bc027",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/service/TokenService.java": {
+    "mtime": 1794524735.6306865,
+    "seen": 1794563161.073023,
+    "ast_hash": "62eb49ed39438e509d77f62960ba1c12",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/service/UserNotFoundException.java": {
+    "mtime": 1794507000.4107735,
+    "seen": 1794563161.0730245,
+    "ast_hash": "b08983241b815c1a6a7cda3bc2e6be5f",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/storage/EmploymentProofStorage.java": {
+    "mtime": 1794524663.1563938,
+    "seen": 1794563161.073026,
+    "ast_hash": "bdd5899736aaf17b61f68ca9e05cff66",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/java/com/smartrecruit/identity/storage/MinioEmploymentProofStorage.java": {
+    "mtime": 1794524663.2241082,
+    "seen": 1794563161.0730276,
+    "ast_hash": "55020b94176e3bcc5479a3ca0904a40f",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/main/resources/application.yml": {
+    "mtime": 1794528866.4367409,
+    "seen": 1794563161.0730293,
+    "ast_hash": "5176a69cb41fa07b55337823850cd733",
+    "semantic_hash": ""
+  },
+  "services/identity-service/src/test/java/com/smartrecruit/identity/IdentityServiceApplicationTests.java": {
+    "mtime": 1794507000.4175215,
+    "seen": 1794563161.073031,
+    "ast_hash": "5394f71c45e187055f53d2debad15837",
+    "semantic_hash": ""
+  },
+  "services/interview-service/pom.xml": {
+    "mtime": 1794524608.0610454,
+    "seen": 1794563161.0730321,
+    "ast_hash": "218f7b63cd2160503175b81bc2eb8fca",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/main/java/com/smartrecruit/interview/InterviewServiceApplication.java": {
+    "mtime": 1794524607.449619,
+    "seen": 1794563161.073034,
+    "ast_hash": "c8a9a670edf497fa9dc2954d66769366",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/main/java/com/smartrecruit/interview/api/ApiExceptionHandler.java": {
+    "mtime": 1794524608.0017066,
+    "seen": 1794563161.0730357,
+    "ast_hash": "62912d1ae32b27508770b3f4c6bda488",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/main/java/com/smartrecruit/interview/api/InterviewController.java": {
+    "mtime": 1794524607.727619,
+    "seen": 1794563161.0730374,
+    "ast_hash": "ec98b01f9e149da792fed2ea3b89390e",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/main/java/com/smartrecruit/interview/config/ApiSecurityConfiguration.java": {
+    "mtime": 1794524607.4077342,
+    "seen": 1794563161.0730388,
+    "ast_hash": "dfad38ff631e5741e88a8cf1c0ab354f",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/main/java/com/smartrecruit/interview/domain/Interview.java": {
+    "mtime": 1794524607.606473,
+    "seen": 1794563161.0730402,
+    "ast_hash": "5c43952625c76cee2d30b50520efe0ea",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/main/java/com/smartrecruit/interview/events/InterviewEvents.java": {
+    "mtime": 1794525545.5594966,
+    "seen": 1794563161.0730417,
+    "ast_hash": "c4633d4d38c4e170d1ddfa339fe330ef",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/main/java/com/smartrecruit/interview/repo/InterviewRepository.java": {
+    "mtime": 1794524607.6447947,
+    "seen": 1794563161.073043,
+    "ast_hash": "ebe633ea501bc0226c99e66c778e2cfe",
+    "semantic_hash": ""
+  },
+  "services/interview-service/src/test/java/com/smartrecruit/interview/ApiDocumentationTests.java": {
+    "mtime": 1794507000.4258895,
+    "seen": 1794563161.0730448,
+    "ast_hash": "7feb425563ede04028e4619653f046a8",
+    "semantic_hash": ""
+  },
+  "services/notification-service/pom.xml": {
+    "mtime": 1794507627.6142192,
+    "seen": 1794563161.0730462,
+    "ast_hash": "4aba788be3105093b30099fb0ad7e74e",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/NotificationServiceApplication.java": {
+    "mtime": 1794507000.4289892,
+    "seen": 1794563161.0730479,
+    "ast_hash": "6b5064b72df9dc39a20a592e50d6b161",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/api/ApiExceptionHandler.java": {
+    "mtime": 1794509586.3455548,
+    "seen": 1794563161.0730493,
+    "ast_hash": "0edbca104310b8082b7eab347f94c361",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/api/NotificationController.java": {
+    "mtime": 1794525964.0851536,
+    "seen": 1794563161.073051,
+    "ast_hash": "1f52300b1ec09fae8faa16470371ac9f",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/config/ApiSecurityConfiguration.java": {
+    "mtime": 1794509586.3429298,
+    "seen": 1794563161.0730526,
+    "ast_hash": "da5d52ffc57e3a7711d89711a592a512",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/config/KafkaConfiguration.java": {
+    "mtime": 1794524539.5334456,
+    "seen": 1794563161.0730543,
+    "ast_hash": "797c81a488806d072c72bc90e7e490e9",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/domain/Notification.java": {
+    "mtime": 1794509586.3491292,
+    "seen": 1794563161.0730557,
+    "ast_hash": "0f5d016d9cd9663514f35f999ffeaa20",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/dto/NotificationResponse.java": {
+    "mtime": 1794509643.869568,
+    "seen": 1794563161.0730572,
+    "ast_hash": "235434e6821a814212578df97d0297f1",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/events/DomainEventConsumer.java": {
+    "mtime": 1794509643.872668,
+    "seen": 1794563161.073059,
+    "ast_hash": "adc42b02172f6cdc1ba1156449f29719",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/repository/NotificationRepository.java": {
+    "mtime": 1794525963.7383313,
+    "seen": 1794563161.0730605,
+    "ast_hash": "08cf8166d61e308350cd237abece87f8",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/main/java/com/smartrecruit/notification/service/NotificationService.java": {
+    "mtime": 1794525963.928915,
+    "seen": 1794563161.0730624,
+    "ast_hash": "279e7e47e1e8896ea9bba0918b65e136",
+    "semantic_hash": ""
+  },
+  "services/notification-service/src/test/java/com/smartrecruit/notification/ApiDocumentationTests.java": {
+    "mtime": 1794507000.4326124,
+    "seen": 1794563161.0730639,
+    "ast_hash": "7361f9b7b99255c6877f6cf5a62d62fa",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/pom.xml": {
+    "mtime": 1794523824.8275292,
+    "seen": 1794563161.0730655,
+    "ast_hash": "495baa071eafa1fb5b6a26d90382350b",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/RecruitmentServiceApplication.java": {
+    "mtime": 1794523769.4875,
+    "seen": 1794563161.073067,
+    "ast_hash": "2c31f1ba16c189ceca272f4747551a18",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/api/ApiExceptionHandler.java": {
+    "mtime": 1794523745.4559374,
+    "seen": 1794563161.0730686,
+    "ast_hash": "6e6e57e195fd019c2a5da38c066a331c",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/api/PageResponse.java": {
+    "mtime": 1794523769.3840551,
+    "seen": 1794563161.07307,
+    "ast_hash": "14119698bbb3bd79e776732960bb6ff6",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/api/RecruitmentController.java": {
+    "mtime": 1794533766.4602723,
+    "seen": 1794563161.0730717,
+    "ast_hash": "c25d4671d70cf38048e8858cb4c35756",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/config/ApiSecurityConfiguration.java": {
+    "mtime": 1794523815.840192,
+    "seen": 1794563161.0730734,
+    "ast_hash": "e178565ce210b1030ff6fb70c36da369",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/config/KafkaProducerConfiguration.java": {
+    "mtime": 1794524110.547527,
+    "seen": 1794563161.073075,
+    "ast_hash": "35e4251483eceb4cd3df3bb82b3a2ef3",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/domain/Application.java": {
+    "mtime": 1794524734.9596658,
+    "seen": 1794563161.0730765,
+    "ast_hash": "7a56160d4955c3124e7bef1f0f74fcd9",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/domain/Business.java": {
+    "mtime": 1794523744.2087474,
+    "seen": 1794563161.0730777,
+    "ast_hash": "5a02a4b5a5829a779deb69feae47cf7a",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/domain/Job.java": {
+    "mtime": 1794525984.9392147,
+    "seen": 1794563161.0730793,
+    "ast_hash": "7a5d116753940f05e979ab80e3f11b13",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/events/OutboxMessage.java": {
+    "mtime": 1794523745.2916763,
+    "seen": 1794563161.0730808,
+    "ast_hash": "f83c7e23b9ccb1646639751f21b5f1cb",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/events/OutboxPublisher.java": {
+    "mtime": 1794523769.4324665,
+    "seen": 1794563161.0730824,
+    "ast_hash": "0364825cc5569d4b65efb13cd31672bd",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/repo/ApplicationRepository.java": {
+    "mtime": 1794523744.588734,
+    "seen": 1794563161.0730839,
+    "ast_hash": "e24cb8c2a2045c931cf57c09121bb649",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/repo/BusinessRepository.java": {
+    "mtime": 1794523744.7639732,
+    "seen": 1794563161.073085,
+    "ast_hash": "07a5eeb6f538bd306c82be0238cd70e8",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/repo/JobRepository.java": {
+    "mtime": 1794523769.3356502,
+    "seen": 1794563161.0730867,
+    "ast_hash": "74c9d909dba3cff4ea133df3626a7557",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/repo/OutboxRepository.java": {
+    "mtime": 1794523745.1807203,
+    "seen": 1794563161.0730882,
+    "ast_hash": "1486534de09822b541cda8b8341b5f7a",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/service/JobExpirationScheduler.java": {
+    "mtime": 1794523805.2216518,
+    "seen": 1794563161.0730898,
+    "ast_hash": "72c431658605addb622f4148b3b247dc",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/main/java/com/smartrecruit/recruitment/service/RecruitmentService.java": {
+    "mtime": 1794525985.1546397,
+    "seen": 1794563161.0730913,
+    "ast_hash": "9476b41d8dc45c7e3b9630ef8dfb9043",
+    "semantic_hash": ""
+  },
+  "services/recruitment-service/src/test/java/com/smartrecruit/recruitment/ApiDocumentationTests.java": {
+    "mtime": 1794507000.4399145,
+    "seen": 1794563161.073093,
+    "ast_hash": "c820bb0b8a3533c61e4a95f513ecff91",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/pom.xml": {
+    "mtime": 1794507627.6111825,
+    "seen": 1794563161.0730941,
+    "ast_hash": "769efcb14f2a0e405dac042b26d68848",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/SubscriptionServiceApplication.java": {
+    "mtime": 1794507000.4430356,
+    "seen": 1794563161.0731995,
+    "ast_hash": "1619ddf37012a088e5cf4ba17ec8447b",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/api/ApiExceptionHandler.java": {
+    "mtime": 1794507722.5740228,
+    "seen": 1794563161.0732036,
+    "ast_hash": "1019ed3e4cf0cec42d9bc9e7a926202b",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/api/SubscriptionController.java": {
+    "mtime": 1794508001.276543,
+    "seen": 1794563161.0732055,
+    "ast_hash": "e87608e63dd55d73c1b4d0e993f2db85",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/config/ApiSecurityConfiguration.java": {
+    "mtime": 1794507722.570338,
+    "seen": 1794563161.0732076,
+    "ast_hash": "ba1e91ca4e1a52298e70bd1bff2ea5c5",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/domain/Invoice.java": {
+    "mtime": 1794507801.812795,
+    "seen": 1794563161.0732093,
+    "ast_hash": "e2150ec7c710a28e1258d4b18d0c8dc5",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/domain/InvoiceStatus.java": {
+    "mtime": 1794507801.808064,
+    "seen": 1794563161.0732112,
+    "ast_hash": "dcf507c3fcad9cbe343560f158349185",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/domain/Subscription.java": {
+    "mtime": 1794507891.5735219,
+    "seen": 1794563161.0732126,
+    "ast_hash": "266d76c6f68822c1d650ea51f60f63ac",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/domain/SubscriptionAudience.java": {
+    "mtime": 1794507801.807029,
+    "seen": 1794563161.0732143,
+    "ast_hash": "e842e4045809aeb704d1afdc71867ce3",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/domain/SubscriptionHistory.java": {
+    "mtime": 1794507801.8117447,
+    "seen": 1794563161.073216,
+    "ast_hash": "c18b8b2002a3f6e61c3708f46d373750",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/domain/SubscriptionPlan.java": {
+    "mtime": 1794511545.5968788,
+    "seen": 1794563161.0732176,
+    "ast_hash": "4475e0020b391ae652fc47479be4e48e",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/domain/SubscriptionStatus.java": {
+    "mtime": 1794507801.8075535,
+    "seen": 1794563161.0732193,
+    "ast_hash": "bb42b6dc1e67af1e9c699e82dfcd4565",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/dto/AdminSubscriptionUpdateRequest.java": {
+    "mtime": 1794507856.4920683,
+    "seen": 1794563161.0732212,
+    "ast_hash": "ba9fe73869814d96adc8c34170b3c4d0",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/dto/InvoiceResponse.java": {
+    "mtime": 1794507856.490501,
+    "seen": 1794563161.0732226,
+    "ast_hash": "b84465437be923a1d3720fc3f3691e75",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/dto/PlanRequest.java": {
+    "mtime": 1794507856.4837093,
+    "seen": 1794563161.0732243,
+    "ast_hash": "ea0b0d81d13cbb821ee3f7b091ede7f8",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/dto/PlanResponse.java": {
+    "mtime": 1794507856.484224,
+    "seen": 1794563161.0732257,
+    "ast_hash": "13c19961a9b5e8bce417eff20a42c69d",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/dto/SubscribeRequest.java": {
+    "mtime": 1794507856.4858637,
+    "seen": 1794563161.0732272,
+    "ast_hash": "779c30a9b0305b28561ea3699b455663",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/dto/SubscriptionHistoryResponse.java": {
+    "mtime": 1794507856.4889667,
+    "seen": 1794563161.0732288,
+    "ast_hash": "7d289b4b0bb97b849fb04bd618578695",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/dto/SubscriptionResponse.java": {
+    "mtime": 1794507876.3726547,
+    "seen": 1794563161.0732303,
+    "ast_hash": "54b956b1c0988eea99c84b632ea73ba5",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/repository/InvoiceRepository.java": {
+    "mtime": 1794507821.5652235,
+    "seen": 1794563161.073232,
+    "ast_hash": "1fac1615781765c5733d7e25d1009e04",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/repository/SubscriptionHistoryRepository.java": {
+    "mtime": 1794511622.936456,
+    "seen": 1794563161.0732334,
+    "ast_hash": "047e50fc5fad99d98d9c57e3878b7bf5",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/repository/SubscriptionPlanRepository.java": {
+    "mtime": 1794507821.5621068,
+    "seen": 1794563161.073235,
+    "ast_hash": "e8061052bd79da01d137d56a7ede206b",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/repository/SubscriptionRepository.java": {
+    "mtime": 1794507821.5631356,
+    "seen": 1794563161.0732365,
+    "ast_hash": "323023b5ff3e5c50bf42984c8ff8d180",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/service/MockPaymentGateway.java": {
+    "mtime": 1794507876.369615,
+    "seen": 1794563161.0732386,
+    "ast_hash": "f43c585437cf3f45627ec1efb7150597",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/service/PaymentGateway.java": {
+    "mtime": 1794507876.3685834,
+    "seen": 1794563161.07324,
+    "ast_hash": "a49f9873724298bed9ccfe87218eaee7",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/main/java/com/smartrecruit/subscription/service/SubscriptionService.java": {
+    "mtime": 1794526938.321359,
+    "seen": 1794563161.0732417,
+    "ast_hash": "47b1171ddd675f26fe65e97512a73ab9",
+    "semantic_hash": ""
+  },
+  "services/subscription-service/src/test/java/com/smartrecruit/subscription/ApiDocumentationTests.java": {
+    "mtime": 1794507000.4461374,
+    "seen": 1794563161.0732431,
+    "ast_hash": "90c5157a31793de4f673628473da1eb5",
+    "semantic_hash": ""
+  },
+  "FIX_NOTES.md": {
+    "mtime": 1794533836.9095824,
+    "seen": 1794563161.0732446,
+    "ast_hash": "09f302d5d1e8c14b472281d91345d6c0",
+    "semantic_hash": ""
+  },
+  "HELP.md": {
+    "mtime": 1794507000.346652,
+    "seen": 1794563161.0732462,
+    "ast_hash": "098fedce631003a6e41e5aae591d34b0",
+    "semantic_hash": ""
+  },
+  "all_docs.txt": {
+    "mtime": 1794507000.348189,
+    "seen": 1794563161.0732477,
+    "ast_hash": "27e94b866de8487734844bab12cd6140",
+    "semantic_hash": ""
+  },
+  "all_services_codes.txt": {
+    "mtime": 1794507000.3517818,
+    "seen": 1794563161.0732493,
+    "ast_hash": "4782d28b8145405526f3a0f0a16b5dac",
+    "semantic_hash": ""
+  },
+  "docs/0- technical specifications.md": {
+    "mtime": 1794507000.3538475,
+    "seen": 1794563161.0732508,
+    "ast_hash": "2c19a31ec9792d40c02a5415fd481e2f",
+    "semantic_hash": ""
+  },
+  "docs/0- used system design.md": {
+    "mtime": 1794511667.9402769,
+    "seen": 1794563161.0732527,
+    "ast_hash": "15cd5efaa04e78ce3b491e0b764e62b9",
+    "semantic_hash": ""
+  },
+  "docs/actors.md": {
+    "mtime": 1794507000.3571496,
+    "seen": 1794563161.073254,
+    "ast_hash": "60b2e28d67618fe2be78f96fa09d3246",
+    "semantic_hash": ""
+  },
+  "docs/architecture.md": {
+    "mtime": 1794511149.5953164,
+    "seen": 1794563161.0732555,
+    "ast_hash": "42dbc57e9982ee64aeca8efc83e8e085",
+    "semantic_hash": ""
+  },
+  "docs/contribution-guide.md": {
+    "mtime": 1794507000.3586853,
+    "seen": 1794563161.073259,
+    "ast_hash": "91700fbac474a06df93bef11c87ae4f5",
+    "semantic_hash": ""
+  },
+  "docs/database.md": {
+    "mtime": 1794507000.359274,
+    "seen": 1794563161.0732603,
+    "ast_hash": "85e61f44c66b81f2ae144739e4196fad",
+    "semantic_hash": ""
+  },
+  "docs/endpoints.md": {
+    "mtime": 1794510906.8735042,
+    "seen": 1794563161.0732617,
+    "ast_hash": "d3e4b3242045946a536bcf091641de52",
+    "semantic_hash": ""
+  },
+  "docs/implementation-phases.md": {
+    "mtime": 1794511149.5979328,
+    "seen": 1794563161.0732634,
+    "ast_hash": "3861381c2708b194b7f842865a04a36c",
+    "semantic_hash": ""
+  },
+  "docs/production.md": {
+    "mtime": 1794511149.5968888,
+    "seen": 1794563161.0732648,
+    "ast_hash": "c7be705108699fb0c96282445fd89f9b",
+    "semantic_hash": ""
+  },
+  "docs/roadmap.md": {
+    "mtime": 1794511223.3207953,
+    "seen": 1794563161.0732665,
+    "ast_hash": "d54684e4aeafdfae7bd51c73545be783",
+    "semantic_hash": ""
+  },
+  "readme.md": {
+    "mtime": 1794510906.8709257,
+    "seen": 1794563161.0732677,
+    "ast_hash": "d6781649bb3dc6bf2af04f4ce2f38fb6",
+    "semantic_hash": ""
+  },
+  "src/docs/0- technical specifications.md": {
+    "mtime": 1794507000.4477053,
+    "seen": 1794563161.0732691,
+    "ast_hash": "2c19a31ec9792d40c02a5415fd481e2f",
+    "semantic_hash": ""
+  },
+  "src/docs/0- used system design.md": {
+    "mtime": 1794507000.4477053,
+    "seen": 1794563161.0732708,
+    "ast_hash": "8ff1a1c895cda78106ed7e417ecb1035",
+    "semantic_hash": ""
+  },
+  "src/docs/actors.md": {
+    "mtime": 1794507000.449262,
+    "seen": 1794563161.073272,
+    "ast_hash": "60b2e28d67618fe2be78f96fa09d3246",
+    "semantic_hash": ""
+  },
+  "src/docs/architecture.md": {
+    "mtime": 1794507000.449776,
+    "seen": 1794563161.0732737,
+    "ast_hash": "7dddad515fff79740225b029d3167fe2",
+    "semantic_hash": ""
+  },
+  "src/docs/contribution-guide.md": {
+    "mtime": 1794507000.4503572,
+    "seen": 1794563161.073275,
+    "ast_hash": "965939d999b5a01860326d1c9c714d32",
+    "semantic_hash": ""
+  },
+  "src/docs/database.md": {
+    "mtime": 1794507000.4508736,
+    "seen": 1794563161.0732772,
+    "ast_hash": "944b121f0a86d88fa9a9b36e7f39c090",
+    "semantic_hash": ""
+  },
+  "src/docs/endpoints.md": {
+    "mtime": 1794507000.4514022,
+    "seen": 1794563161.0732787,
+    "ast_hash": "9d7d3e3d9ceeea732c3dcc23589e6eaf",
+    "semantic_hash": ""
+  },
+  "src/docs/implementation-phases.md": {
+    "mtime": 1794507000.4519162,
+    "seen": 1794563161.07328,
+    "ast_hash": "e2ecc05e1bb1bbc1cd9e62d8e9425219",
+    "semantic_hash": ""
+  },
+  "src/docs/production.md": {
+    "mtime": 1794507000.4519162,
+    "seen": 1794563161.0732815,
+    "ast_hash": "2a889dcb311365b8604bb91e88c154f4",
+    "semantic_hash": ""
+  },
+  "src/docs/roadmap.md": {
+    "mtime": 1794507000.4524417,
+    "seen": 1794563161.073283,
+    "ast_hash": "625d40ea94b7b943dafc2d729971ee8e",
+    "semantic_hash": ""
+  }
+}

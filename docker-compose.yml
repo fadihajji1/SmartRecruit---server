@@ -35,7 +35,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: identity_db
     ports:
-      - "5433:5432"
+      - "15433:5432"  # 5433 is often taken by a local Windows PostgreSQL install
     volumes:
       - identity_postgres_data:/var/lib/postgresql/data
 
@@ -190,6 +190,9 @@ services:
       - minio_data:/data
 
   identity-service:
+    # App containers are opt-in: local development runs the jars with run-all.bat.
+    # Start them with:  docker compose --profile apps up -d
+    profiles: ["apps"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -220,6 +223,9 @@ services:
         condition: service_started
 
   candidate-ai-service:
+    # App containers are opt-in: local development runs the jars with run-all.bat.
+    # Start them with:  docker compose --profile apps up -d
+    profiles: ["apps"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -252,6 +258,9 @@ services:
         condition: service_started
 
   subscription-service:
+    # App containers are opt-in: local development runs the jars with run-all.bat.
+    # Start them with:  docker compose --profile apps up -d
+    profiles: ["apps"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -274,6 +283,9 @@ services:
         condition: service_healthy
 
   notification-service:
+    # App containers are opt-in: local development runs the jars with run-all.bat.
+    # Start them with:  docker compose --profile apps up -d
+    profiles: ["apps"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -300,6 +312,9 @@ services:
         condition: service_healthy
 
   analytics-service:
+    # App containers are opt-in: local development runs the jars with run-all.bat.
+    # Start them with:  docker compose --profile apps up -d
+    profiles: ["apps"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -326,6 +341,9 @@ services:
         condition: service_healthy
 
   api-gateway:
+    # App containers are opt-in: local development runs the jars with run-all.bat.
+    # Start them with:  docker compose --profile apps up -d
+    profiles: ["apps"]
     build:
       context: .
       dockerfile: Dockerfile

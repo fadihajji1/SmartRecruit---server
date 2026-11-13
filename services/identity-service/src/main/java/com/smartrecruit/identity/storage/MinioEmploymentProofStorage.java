@@ -103,6 +103,20 @@ public class MinioEmploymentProofStorage implements EmploymentProofStorage {
 	}
 
 	@Override
+	public String temporaryUrl(String objectKey) {
+		try {
+			return minio.getPresignedObjectUrl(io.minio.GetPresignedObjectUrlArgs.builder()
+					.method(io.minio.http.Method.GET)
+					.bucket(properties.bucket())
+					.object(objectKey)
+					.expiry(10, java.util.concurrent.TimeUnit.MINUTES)
+					.build());
+		} catch (MinioException | IOException | NoSuchAlgorithmException | InvalidKeyException exception) {
+			throw new StorageException("Unable to create employment proof link", exception);
+		}
+	}
+
+	@Override
 	public void delete(String objectKey) {
 		try {
 			minio.removeObject(RemoveObjectArgs.builder()
