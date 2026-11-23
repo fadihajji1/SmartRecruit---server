@@ -2,8 +2,11 @@ package com.smartrecruit.notification.service;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +21,8 @@ import com.smartrecruit.notification.repository.NotificationRepository;
 
 @Service
 public class NotificationService {
+
+	private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 
 	private final NotificationRepository notificationRepository;
 
@@ -110,6 +115,15 @@ public class NotificationService {
 
 		List<Notification> saved = notificationRepository.saveAll(samples);
 		return saved.stream().map(NotificationResponse::from).toList();
+	}
+
+	/**
+	 * Called by the Kafka DomainEventConsumer. Events identify recipients by user id, but notifications are
+	 * stored by recipient email, so they cannot be addressed yet. TODO: resolve user ids to emails (identity-service)
+	 * or carry the recipient email in the event payload.
+	 */
+	public void createFromEvent(UUID eventId, String eventType, Set<UUID> recipients, String title, String content, String type) {
+		logger.info("Skipping domain event {} ({}) for {} recipient id(s): recipient emails are not available", eventId, eventType, recipients.size());
 	}
 
 	private Notification findAndVerifyOwnership(UUID id, String userEmail) {

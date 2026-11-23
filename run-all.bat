@@ -38,9 +38,9 @@ set SERVICES=identity-service:8082 subscription-service:8092 recruitment-service
 REM ---------- 2. stop old copies ----------
 echo.
 echo [1/5] Stopping old copies of the services...
-docker compose --profile apps stop identity-service candidate-ai-service subscription-service notification-service analytics-service api-gateway >nul 2>&1
-docker compose --profile apps rm -f identity-service candidate-ai-service subscription-service notification-service analytics-service api-gateway >nul 2>&1
-for %%P in (8080 8082 8090 8091 8092 8093 8094 8095) do call :stopJavaOnPort %%P
+docker compose --profile app stop identity-service candidate-ai-service subscription-service notification-service analytics-service api-gateway >nul 2>&1
+docker compose --profile app rm -f identity-service candidate-ai-service subscription-service notification-service analytics-service api-gateway >nul 2>&1
+for %%P in (8080 8082 8083 8090 8091 8092 8093 8094 8095) do call :stopJavaOnPort %%P
 timeout /t 2 /nobreak >nul
 set PORT_PROBLEM=
 for %%P in (8080 8082 8090 8091 8092 8093 8094 8095) do call :checkPortFree %%P
