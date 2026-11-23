@@ -66,7 +66,7 @@ public class RecruitmentService {
 	public Page<JobResponse> searchPublicJobs(
 			String query, String location, String contractType, Pageable pageable) {
 		return jobOfferRepository.searchPublicJobs(
-				JobStatus.OPEN, blankToNull(query), blankToNull(location), blankToNull(contractType),
+				JobStatus.OPEN, blankToEmpty(query), blankToEmpty(location), blankToEmpty(contractType),
 				withDefaultSort(pageable))
 				.map(job -> toJobResponse(job, null));
 	}
@@ -464,6 +464,10 @@ public class RecruitmentService {
 
 	private static boolean isBlank(String value) {
 		return value == null || value.isBlank();
+	}
+
+	private static String blankToEmpty(String value) {
+		return value == null ? "" : value.trim();
 	}
 
 	private String blankToNull(String value) {

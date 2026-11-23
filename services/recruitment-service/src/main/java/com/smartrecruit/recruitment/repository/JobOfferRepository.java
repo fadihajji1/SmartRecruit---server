@@ -17,10 +17,11 @@ public interface JobOfferRepository extends JpaRepository<JobOffer, UUID> {
 	@Query("""
 			select job from JobOffer job
 			where job.status = :status
-			  and (:query is null or lower(job.title) like lower(concat('%', :query, '%'))
-			       or lower(job.description) like lower(concat('%', :query, '%')))
-			  and (:location is null or lower(coalesce(job.location, '')) like lower(concat('%', :location, '%')))
-			  and (:contractType is null or job.contractType = :contractType)
+			  and (:query = '' or lower(job.title) like lower(concat('%', :query, '%'))
+			       or lower(job.description) like lower(concat('%', :query, '%'))
+			       or lower(job.business.name) like lower(concat('%', :query, '%')))
+			  and (:location = '' or lower(coalesce(job.location, '')) like lower(concat('%', :location, '%')))
+			  and (:contractType = '' or lower(coalesce(job.contractType, '')) = lower(:contractType))
 			""")
 	Page<JobOffer> searchPublicJobs(
 			@Param("status") JobStatus status,

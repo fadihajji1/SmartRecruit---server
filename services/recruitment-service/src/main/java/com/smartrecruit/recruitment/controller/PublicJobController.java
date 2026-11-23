@@ -3,6 +3,7 @@ package com.smartrecruit.recruitment.controller;
 import java.util.UUID;
 
 import org.springdoc.core.annotations.ParameterObject;
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -32,10 +33,11 @@ public class PublicJobController {
 	@Operation(summary = "Search published jobs")
 	public Page<JobResponse> searchJobs(
 			@RequestParam(required = false) String query,
+			@Parameter(description = "Alias of query") @RequestParam(required = false) String q,
 			@RequestParam(required = false) String location,
 			@RequestParam(required = false) String contractType,
 			@ParameterObject Pageable pageable) {
-		return recruitmentService.searchPublicJobs(query, location, contractType, pageable);
+		return recruitmentService.searchPublicJobs(query != null ? query : q, location, contractType, pageable);
 	}
 
 	@GetMapping("/{jobId}")
