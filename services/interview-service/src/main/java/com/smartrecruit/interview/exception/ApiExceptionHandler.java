@@ -35,6 +35,12 @@ public class ApiExceptionHandler {
         return ApiError.of(HttpStatus.CONFLICT, "INVALID_INTERVIEW_STATE", ex.getMessage());
     }
 
+    @ExceptionHandler(DependencyUnavailableException.class)
+    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
+    ApiError dependencyUnavailable(DependencyUnavailableException ex) {
+        return ApiError.of(HttpStatus.SERVICE_UNAVAILABLE, "DEPENDENCY_UNAVAILABLE", ex.getMessage());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     ApiError validation(MethodArgumentNotValidException ex) {

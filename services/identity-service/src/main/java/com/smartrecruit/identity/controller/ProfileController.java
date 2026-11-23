@@ -21,7 +21,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/api/v1/users/me")
+@RequestMapping({ "/api/v1/users/me", "/api/v1/recruiters/me" })
 @SecurityRequirement(name = "bearerAuth")
 @Tag(name = "Profile", description = "Current-user profile operations")
 public class ProfileController {

@@ -1,5 +1,11 @@
 package com.smartrecruit.recruitment.controller;
 
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import com.smartrecruit.recruitment.dto.CreateBusinessRequest;
+
 import java.util.UUID;
 import java.util.List;
 
@@ -40,6 +46,14 @@ public class RecruiterBusinessController {
 		return recruitmentService.getRecruiterBusinesses(userId(jwt));
 	}
 
+	@PostMapping
+	@ResponseStatus(HttpStatus.CREATED)
+	@Operation(summary = "Create a business; the recruiter becomes its owner")
+	public BusinessResponse createBusiness(
+			@Valid @RequestBody CreateBusinessRequest request, @AuthenticationPrincipal Jwt jwt) {
+		return recruitmentService.createRecruiterBusiness(userId(jwt), request);
+	}
+
 	@GetMapping("/{businessId}")
 	@Operation(summary = "Get an authorized business")
 	public ResponseEntity<BusinessResponse> getBusiness(
@@ -64,7 +78,7 @@ public class RecruiterBusinessController {
 								"""))))
 	public ResponseEntity<BusinessResponse> updateBusiness(
 			@PathVariable UUID businessId,
-			@RequestBody UpdateBusinessRequest request,
+			@Valid @RequestBody UpdateBusinessRequest request,
 			@AuthenticationPrincipal Jwt jwt) {
 		return ResponseEntity.ok(recruitmentService.updateRecruiterBusiness(businessId, userId(jwt), request));
 	}

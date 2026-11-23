@@ -12,5 +12,7 @@ public interface DelayRequestRepository extends JpaRepository<DelayRequest, UUID
     Optional<DelayRequest> findByIdAndInterviewRecruiterId(UUID id, UUID recruiterId);
     Optional<DelayRequest> findFirstByInterviewIdAndInterviewRecruiterIdAndStatusOrderByCreatedAtDesc(
             UUID interviewId, UUID recruiterId, DelayRequestStatus status);
+    Optional<DelayRequest> findFirstByInterviewIdAndStatusOrderByCreatedAtDesc(UUID interviewId, DelayRequestStatus status);
+
     boolean existsByInterviewIdAndRequestedByUserIdAndStatus(UUID interviewId, UUID userId, DelayRequestStatus status);
 }

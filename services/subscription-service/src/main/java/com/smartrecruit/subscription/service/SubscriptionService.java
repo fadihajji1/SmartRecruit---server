@@ -38,11 +38,13 @@ public class SubscriptionService {
     private final SubscriptionHistoryRepository history;
     private final InvoiceRepository invoices;
     private final PaymentGateway payments;
+    private final SubscriptionEvents events;
 
     public SubscriptionService(SubscriptionPlanRepository plans, SubscriptionRepository subscriptions,
-            SubscriptionHistoryRepository history, InvoiceRepository invoices, PaymentGateway payments) {
+            SubscriptionHistoryRepository history, InvoiceRepository invoices, PaymentGateway payments,
+            SubscriptionEvents events) {
         this.plans = plans; this.subscriptions = subscriptions; this.history = history;
-        this.invoices = invoices; this.payments = payments;
+        this.invoices = invoices; this.payments = payments; this.events = events;
     }
 
     @Transactional(readOnly = true)
@@ -228,6 +230,7 @@ public class SubscriptionService {
     private void record(Subscription subscription, UUID actorId, String action, String fromStatus, String toStatus,
             String fromPlan, String toPlan, String details) {
         history.save(new SubscriptionHistory(subscription.getId(), actorId, action, fromStatus, toStatus, fromPlan, toPlan, details));
+        events.publish("SUBSCRIPTION_" + action, subscription, toPlan == null ? fromPlan : toPlan, details);
     }
 
     private ResponseStatusException notFound(String message) { return new ResponseStatusException(HttpStatus.NOT_FOUND, message); }

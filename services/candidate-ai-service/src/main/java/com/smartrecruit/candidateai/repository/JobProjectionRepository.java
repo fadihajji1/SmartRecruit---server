@@ -7,4 +7,5 @@ import com.smartrecruit.candidateai.domain.JobProjection;
 
 public interface JobProjectionRepository extends JpaRepository<JobProjection, UUID> {
     List<JobProjection> findAllByStatusIgnoreCaseOrderByUpdatedAtDesc(String status);
+    List<JobProjection> findAllByStatusInOrderByUpdatedAtDesc(java.util.Collection<String> statuses);
 }

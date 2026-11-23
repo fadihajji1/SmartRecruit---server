@@ -125,12 +125,17 @@ public class AdminUserService {
 	@Transactional
 	public UserResponse update(UUID id, AdminUpdateUserRequest request) {
 		User user = findUser(id);
-		user.setProfile(request.fullName().trim(), request.phone(), request.address(),
-				request.city(), request.state(), request.country(), request.postalCode());
-		if (user instanceof Recruiter recruiter) {
-			recruiter.setApprovalStatus(request.status());
-		} else {
-			user.setStatus(request.status());
+		String fullName = request.fullName() == null || request.fullName().isBlank()
+				? user.getFullName() : request.fullName().trim();
+		user.setProfile(fullName, keep(request.phone(), user.getPhone()), keep(request.address(), user.getAddress()),
+				keep(request.city(), user.getCity()), keep(request.state(), user.getState()),
+				keep(request.country(), user.getCountry()), keep(request.postalCode(), user.getPostalCode()));
+		if (request.status() != null) {
+			if (user instanceof Recruiter recruiter) {
+				recruiter.setApprovalStatus(request.status());
+			} else {
+				user.setStatus(request.status());
+			}
 		}
 		return UserResponse.from(users.save(user));
 	}
@@ -142,6 +147,10 @@ public class AdminUserService {
 			employmentProofStorage.delete(recruiter.getEmploymentProofObjectKey());
 		}
 		users.delete(user);
+	}
+
+	private static String keep(String value, String current) {
+		return value == null ? current : value;
 	}
 
 	private User findUser(UUID id) {

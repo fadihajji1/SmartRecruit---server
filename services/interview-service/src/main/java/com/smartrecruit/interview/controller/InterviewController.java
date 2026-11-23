@@ -46,7 +46,7 @@ public class InterviewController {
     @ResponseStatus(HttpStatus.CREATED)
     public InterviewResponse create(@AuthenticationPrincipal Jwt jwt,
             @Valid @RequestBody CreateInterviewRequest request) {
-        return service.create(requireRoleAndId(jwt, "RECRUITER"), request);
+        return service.create(requireRoleAndId(jwt, "RECRUITER"), jwt.getTokenValue(), request);
     }
 
     @GetMapping("/recruiter/interviews/{interviewId}")

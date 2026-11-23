@@ -10,25 +10,32 @@ spring:
   jpa:
     hibernate:
       ddl-auto: ${JPA_DDL_AUTO:validate}
+    open-in-view: false
 
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
 
   kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
-      properties:
-        spring.json.add.type.headers: false
+    # host port published by docker-compose; containers use kafka:19092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
 
 server:
-  port: ${RECRUITMENT_SERVICE_PORT:8083}
+  port: ${SERVER_PORT:${RECRUITMENT_SERVICE_PORT:8090}}
 
 identity:
   jwt:
     secret: ${JWT_SECRET}
     issuer: ${JWT_ISSUER:smartrecruit-identity}
+
+recruitment:
+  events:
+    topic: ${DOMAIN_EVENTS_TOPIC:smartrecruit.domain-events}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
 
 springdoc:
   swagger-ui:

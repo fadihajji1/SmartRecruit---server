@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -98,7 +98,8 @@ public class AdminUserController {
 				.body(proof.content());
 	}
 
-	@PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+	@RequestMapping(value = "/{id}", method = { RequestMethod.PUT, RequestMethod.PATCH },
+			consumes = MediaType.APPLICATION_JSON_VALUE)
 	@Operation(summary = "Update a registered user's profile or account status")
 	public UserResponse update(@PathVariable UUID id, @Valid @RequestBody AdminUpdateUserRequest request) {
 		return adminUserService.update(id, request);

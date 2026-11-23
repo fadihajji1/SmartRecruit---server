@@ -34,6 +34,18 @@ public class Interview {
     @Column(name = "external_meeting_url", nullable = false, columnDefinition = "TEXT")
     private String externalMeetingUrl;
 
+    @Column(name = "job_title", length = 250)
+    private String jobTitle;
+
+    @Column(name = "candidate_name", length = 200)
+    private String candidateName;
+
+    @Column(name = "duration_minutes", nullable = false)
+    private int durationMinutes = 45;
+
+    @Column(columnDefinition = "TEXT")
+    private String notes;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 24)
     private InterviewStatus status;
@@ -61,7 +73,19 @@ public class Interview {
         this.updatedAt = this.createdAt;
     }
 
+    public void describe(String jobTitle, String candidateName, Integer durationMinutes, String notes) {
+        if (jobTitle != null) this.jobTitle = jobTitle;
+        if (candidateName != null) this.candidateName = candidateName;
+        if (durationMinutes != null) this.durationMinutes = durationMinutes;
+        if (notes != null) this.notes = notes.isBlank() ? null : notes;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() { return id; }
+    public String getJobTitle() { return jobTitle; }
+    public String getCandidateName() { return candidateName; }
+    public int getDurationMinutes() { return durationMinutes; }
+    public String getNotes() { return notes; }
     public UUID getApplicationId() { return applicationId; }
     public UUID getCandidateId() { return candidateId; }
     public UUID getRecruiterId() { return recruiterId; }

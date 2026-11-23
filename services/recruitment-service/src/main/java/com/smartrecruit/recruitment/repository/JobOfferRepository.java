@@ -34,4 +34,6 @@ public interface JobOfferRepository extends JpaRepository<JobOffer, UUID> {
 	Optional<JobOffer> findByIdAndBusiness_IdIn(UUID id, Collection<UUID> businessIds);
 
 	Optional<JobOffer> findByIdAndStatus(UUID id, JobStatus status);
+
+	long countByStatus(JobStatus status);
 }

@@ -31,6 +31,18 @@ public class Business {
 	@Column(length = 500)
 	private String address;
 
+	@Column(length = 500)
+	private String website;
+
+	@Column(length = 120)
+	private String industry;
+
+	@Column(length = 120)
+	private String city;
+
+	@Column(length = 120)
+	private String country;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private BusinessStatus status = BusinessStatus.ACTIVE;
@@ -50,10 +62,26 @@ public class Business {
 		this.address = address;
 	}
 
+	public Business(String name, String description, String address,
+			String website, String industry, String city, String country) {
+		this(name, description, address);
+		this.website = website;
+		this.industry = industry;
+		this.city = city;
+		this.country = country;
+	}
+
 	public void update(String name, String description, String address) {
-		if (name != null) this.name = name;
+		if (name != null && !name.isBlank()) this.name = name;
 		if (description != null) this.description = description;
 		if (address != null) this.address = address;
+	}
+
+	public void updateProfile(String website, String industry, String city, String country) {
+		if (website != null) this.website = website;
+		if (industry != null) this.industry = industry;
+		if (city != null) this.city = city;
+		if (country != null) this.country = country;
 	}
 
 	public void setStatus(BusinessStatus status) {
@@ -76,6 +104,10 @@ public class Business {
 	public String getName() { return name; }
 	public String getDescription() { return description; }
 	public String getAddress() { return address; }
+	public String getWebsite() { return website; }
+	public String getIndustry() { return industry; }
+	public String getCity() { return city; }
+	public String getCountry() { return country; }
 	public BusinessStatus getStatus() { return status; }
 	public Instant getCreatedAt() { return createdAt; }
 	public Instant getUpdatedAt() { return updatedAt; }

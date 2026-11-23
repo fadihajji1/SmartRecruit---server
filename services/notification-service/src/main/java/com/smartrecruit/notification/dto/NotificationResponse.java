@@ -13,6 +13,8 @@ public record NotificationResponse(
 		String title,
 		String message,
 		NotificationType type,
+		String eventType,
+		String link,
 		boolean read,
 		Instant createdAt,
 		Instant readAt
@@ -25,6 +27,8 @@ public record NotificationResponse(
 				notification.getTitle(),
 				notification.getMessage(),
 				notification.getType(),
+				notification.getEventType(),
+				notification.getLink(),
 				notification.isRead(),
 				notification.getCreatedAt(),
 				notification.getReadAt()

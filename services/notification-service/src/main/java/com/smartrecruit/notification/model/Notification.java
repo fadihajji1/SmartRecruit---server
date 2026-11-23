@@ -18,8 +18,21 @@ public class Notification {
 	@Id
 	private UUID id;
 
-	@Column(name = "recipient_email", nullable = false, length = 320)
+	@Column(name = "recipient_email", length = 320)
 	private String recipientEmail;
+
+	@Column(name = "recipient_user_id")
+	private UUID recipientUserId;
+
+	@Column(name = "source_event_id")
+	private UUID sourceEventId;
+
+	@Column(name = "event_type", length = 80)
+	private String eventType;
+
+	/** In-app route the notification opens, e.g. /applications */
+	@Column(length = 300)
+	private String link;
 
 	@Column(name = "recipient_role", length = 32)
 	private String recipientRole;
@@ -56,6 +69,39 @@ public class Notification {
 		this.type = type != null ? type : NotificationType.GENERAL;
 		this.read = false;
 		this.createdAt = Instant.now();
+	}
+
+	/** Notification created from a Kafka domain event for a user id. */
+	public static Notification fromEvent(UUID recipientUserId, UUID sourceEventId, String eventType, String title,
+			String message, NotificationType type, String link) {
+		Notification notification = new Notification();
+		notification.id = UUID.randomUUID();
+		notification.recipientUserId = recipientUserId;
+		notification.sourceEventId = sourceEventId;
+		notification.eventType = eventType;
+		notification.title = title.trim();
+		notification.message = message.trim();
+		notification.type = type != null ? type : NotificationType.GENERAL;
+		notification.link = link;
+		notification.read = false;
+		notification.createdAt = Instant.now();
+		return notification;
+	}
+
+	public UUID getRecipientUserId() {
+		return recipientUserId;
+	}
+
+	public UUID getSourceEventId() {
+		return sourceEventId;
+	}
+
+	public String getEventType() {
+		return eventType;
+	}
+
+	public String getLink() {
+		return link;
 	}
 
 	public UUID getId() {

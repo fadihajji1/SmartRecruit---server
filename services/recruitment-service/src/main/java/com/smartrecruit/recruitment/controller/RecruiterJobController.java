@@ -65,7 +65,8 @@ public class RecruiterJobController {
 								"""))))
 	public ResponseEntity<JobResponse> createJob(
 			@RequestBody CreateJobRequest request, @AuthenticationPrincipal Jwt jwt) {
-		return ResponseEntity.ok(recruitmentService.createRecruiterJob(userId(jwt), request));
+		return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED)
+				.body(recruitmentService.createRecruiterJob(userId(jwt), request));
 	}
 
 	@GetMapping("/{jobId}")
@@ -100,18 +101,16 @@ public class RecruiterJobController {
 
 	@PostMapping("/{jobId}/close")
 	@Operation(summary = "Close a job to new applications")
-	public ResponseEntity<Void> closeJob(
+	public ResponseEntity<JobResponse> closeJob(
 			@PathVariable UUID jobId, @AuthenticationPrincipal Jwt jwt) {
-		recruitmentService.closeRecruiterJob(jobId, userId(jwt));
-		return ResponseEntity.noContent().build();
+		return ResponseEntity.ok(recruitmentService.closeRecruiterJob(jobId, userId(jwt)));
 	}
 
 	@PostMapping("/{jobId}/reopen")
 	@Operation(summary = "Reopen a job")
-	public ResponseEntity<Void> reopenJob(
+	public ResponseEntity<JobResponse> reopenJob(
 			@PathVariable UUID jobId, @AuthenticationPrincipal Jwt jwt) {
-		recruitmentService.reopenRecruiterJob(jobId, userId(jwt));
-		return ResponseEntity.noContent().build();
+		return ResponseEntity.ok(recruitmentService.reopenRecruiterJob(jobId, userId(jwt)));
 	}
 
 	@DeleteMapping("/{jobId}")

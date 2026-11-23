@@ -40,6 +40,15 @@ public class Application {
 	@Column(name = "candidate_cv_id", nullable = false)
 	private UUID candidateCvId;
 
+	@Column(length = 5000)
+	private String message;
+
+	@Column(name = "candidate_name", length = 200)
+	private String candidateName;
+
+	@Column(name = "candidate_email", length = 320)
+	private String candidateEmail;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false, length = 20)
 	private ApplicationStatus status = ApplicationStatus.PENDING;
@@ -57,6 +66,14 @@ public class Application {
 		this.job = Objects.requireNonNull(job);
 		this.candidateId = Objects.requireNonNull(candidateId);
 		this.candidateCvId = Objects.requireNonNull(candidateCvId);
+	}
+
+	public Application(JobOffer job, UUID candidateId, UUID candidateCvId,
+			String message, String candidateName, String candidateEmail) {
+		this(job, candidateId, candidateCvId);
+		this.message = message;
+		this.candidateName = candidateName;
+		this.candidateEmail = candidateEmail;
 	}
 
 	public void changeStatus(ApplicationStatus status) {
@@ -83,6 +100,9 @@ public class Application {
 	public JobOffer getJob() { return job; }
 	public UUID getCandidateId() { return candidateId; }
 	public UUID getCandidateCvId() { return candidateCvId; }
+	public String getMessage() { return message; }
+	public String getCandidateName() { return candidateName; }
+	public String getCandidateEmail() { return candidateEmail; }
 	public ApplicationStatus getStatus() { return status; }
 	public Instant getCreatedAt() { return createdAt; }
 	public Instant getUpdatedAt() { return updatedAt; }

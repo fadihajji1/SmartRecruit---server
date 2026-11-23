@@ -1,5 +1,7 @@
 package com.smartrecruit.recruitment.controller;
 
+import jakarta.validation.Valid;
+
 import java.util.UUID;
 
 import org.springframework.data.domain.Page;
@@ -49,12 +51,13 @@ public class CandidateApplicationController {
 							value = """
 								{
 								  "jobId": "4d4d93e7-a01c-45ab-9dae-c787bf354611",
-								  "candidateCvId": "b8a7b6e5-63bd-4c65-a254-42c80bca3ff2"
+								  "candidateCvId": "b8a7b6e5-63bd-4c65-a254-42c80bca3ff2",
+								  "message": "I would love to join your backend team."
 								}
 								"""))))
 	public ApplicationResponse apply(
-			@RequestBody CreateApplicationRequest request, @AuthenticationPrincipal Jwt jwt) {
-		return recruitmentService.createApplication(userId(jwt), request);
+			@Valid @RequestBody CreateApplicationRequest request, @AuthenticationPrincipal Jwt jwt) {
+		return recruitmentService.createApplication(userId(jwt), jwt.getClaimAsString("name"), jwt.getSubject(), request);
 	}
 
 	@GetMapping("/candidate/applications")

@@ -116,7 +116,7 @@ public class CandidateAiService {
         if (latest == null) return List.of();
         List<String> skills = readList(latest.getSkillsJson());
         if (skills.isEmpty()) return List.of();
-        return jobs.findAllByStatusIgnoreCaseOrderByUpdatedAtDesc("PUBLISHED").stream()
+        return jobs.findAllByStatusInOrderByUpdatedAtDesc(List.of("OPEN", "PUBLISHED")) /* recruitment publishes OPEN */.stream()
             .map(job -> recommendation(job, skills)).filter(item -> item.score().signum() > 0)
             .sorted(java.util.Comparator.comparing(RecommendationResponse::score).reversed()).limit(10).toList();
     }

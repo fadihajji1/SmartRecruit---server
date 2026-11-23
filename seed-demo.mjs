@@ -26,6 +26,10 @@ const failures = [];
 const log = (icon, msg) => console.log(`${icon} ${msg}`);
 const step = title => console.log(`\n=== ${title}`);
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+// list endpoints may return a plain array or a Spring page ({ content: [...] })
+const rows = value => Array.isArray(value) ? value : (value?.content ?? []);
+// deterministic Google Meet-style link (the interview service accepts Zoom, Meet, Teams and Webex)
+const meetLink = id => { const h = id.replace(/-/g, '').replace(/[^a-z]/g, c => 'abcdefghij'[Number(c) || 0]); return `https://meet.google.com/${h.slice(0, 3)}-${h.slice(3, 7)}-${h.slice(7, 10)}`; };
 
 class ApiError extends Error {
   constructor(status, body, path) { super(`${status} ${path}: ${typeof body === 'string' ? body : body?.message || JSON.stringify(body)}`); this.status = status; this.body = body; }
@@ -215,7 +219,7 @@ async function main() {
     }
     const business = businesses[0];
     if (!business) continue;
-    const existing = await api('GET', '/recruiter/jobs', { token });
+    const existing = rows(await api('GET', '/recruiter/jobs?size=200', { token }));
     for (const j of r.jobs) {
       let job = existing.find(x => x.title === j.title && x.status !== 'DELETED');
       if (!job) {
@@ -223,7 +227,8 @@ async function main() {
           expiresAt: new Date(Date.now() + 45 * 86400000).toISOString() } }));
         if (!job) continue;
       }
-      if (j.publish && job.status === 'DRAFT') job = (await attempt(`publish ${j.title}`, () => api('POST', `/recruiter/jobs/${job.id}/publish`, { token }))) || job;
+      // jobs are published (OPEN) on creation; roles marked publish:false are kept closed
+      if (!j.publish && job.status === 'OPEN') job = (await attempt(`keep ${j.title} closed`, () => api('POST', `/recruiter/jobs/${job.id}/close`, { token }))) || job;
       jobsByTitle[j.title] = { ...job, recruiterKey: r.key, close: j.close };
     }
     log('✓', `${r.fullName}: ${business.name}, ${r.jobs.length} roles`);
@@ -267,7 +272,7 @@ async function main() {
 
   const applied = [];
   const mine = {};
-  for (const c of CANDIDATES) mine[c.key] = candidateTokens[c.key] ? (await attempt(`${c.key} applications`, () => api('GET', '/candidate/applications', { token: candidateTokens[c.key] })) || []) : [];
+  for (const c of CANDIDATES) mine[c.key] = candidateTokens[c.key] ? rows(await attempt(`${c.key} applications`, () => api('GET', '/candidate/applications?size=200', { token: candidateTokens[c.key] }))) : [];
   for (const [key, title, finalStatus, interview] of APPLICATIONS) {
     const job = jobsByTitle[title];
     const token = candidateTokens[key];
@@ -304,21 +309,21 @@ async function main() {
       const c = CANDIDATES.find(x => x.key === candidateKey);
       const created = await attempt(`interview ${candidateKey} for ${job.title}`, () => api('POST', '/recruiter/interviews', { token, json: {
         applicationId: app.id, candidateId: app.candidateId, jobId: job.id, jobTitle: job.title, candidateName: c.fullName,
-        scheduledAt: when.toISOString(), durationMinutes: 45, externalMeetingUrl: `https://meet.jit.si/smartrecruit-${app.id.slice(0, 8)}`,
+        scheduledAt: when.toISOString(), durationMinutes: 45, externalMeetingUrl: meetLink(app.id),
         notes: 'Technical discussion with the hiring manager, then 15 minutes for your questions.' } }));
-      if (created && interview === 'completed') await attempt('complete interview', () => api('PATCH', `/recruiter/interviews/${created.id}`, { token, json: { status: 'COMPLETED' } }));
-      if (created && interview === 'cancelled') await attempt('cancel interview', () => api('PATCH', `/recruiter/interviews/${created.id}`, { token, json: { status: 'CANCELLED' } }));
+      if (created && interview === 'completed') await attempt('complete interview', () => api('POST', `/recruiter/interviews/${created.id}/done`, { token }));
+      if (created && interview === 'cancelled') await attempt('cancel interview', () => api('POST', `/recruiter/interviews/${created.id}/cancel`, { token }));
     }
   }
   log('✓', `${interviewCount} new interviews scheduled`);
 
   step('Closing roles (recruiter and admin moderation)');
   for (const job of Object.values(jobsByTitle)) {
-    if (job.close && job.status === 'PUBLISHED') await attempt(`close ${job.title}`, () => api('POST', `/recruiter/jobs/${job.id}/close`, { token: tokens[job.recruiterKey] }), { quietStatuses: [400] });
+    if (job.close && job.status === 'OPEN') await attempt(`close ${job.title}`, () => api('POST', `/recruiter/jobs/${job.id}/close`, { token: tokens[job.recruiterKey] }), { quietStatuses: [400] });
   }
   // the admin closes one offer from the console's moderation tab (shows an admin-closed role)
   const moderated = jobsByTitle['Customer Support Intern'];
-  if (moderated && moderated.status === 'PUBLISHED') await attempt('admin closes Customer Support Intern', () => api('POST', `/admin/jobs/${moderated.id}/close`, { token: admin }), { quietStatuses: [400, 409] });
+  if (moderated && moderated.status === 'OPEN') await attempt('admin closes Customer Support Intern', () => api('POST', `/admin/jobs/${moderated.id}/close`, { token: admin }), { quietStatuses: [400, 409] });
 
   step('Account moderation (admin)');
   for (const c of CANDIDATES.filter(x => x.block)) {
@@ -329,10 +334,10 @@ async function main() {
   step('Waiting for events to reach notifications and analytics (Kafka)');
   await sleep(8000);
   const probes = [
-    ['notifications (Ahmed)', () => api('GET', '/notifications?page=0&size=50', { token: candidateTokens.ahmed }).then(p => `${p.totalElements} notifications`)],
+    ['notifications (Ahmed)', () => api('GET', '/notifications', { token: candidateTokens.ahmed }).then(list => `${rows(list).length} notifications`)],
     ['analytics (Sarah)', () => api('GET', '/recruiter/analytics/overview', { token: tokens.sarah }).then(o => `${o.applications} applications, ${o.publishedJobs} published offers`)],
     ['recommendations (Ahmed)', () => api('GET', '/candidate/recommendations', { token: candidateTokens.ahmed }).then(r => `${r.length} recommended roles`)],
-    ['admin stats', () => api('GET', '/admin/recruitment/stats', { token: admin }).then(s => `${s.jobsPUBLISHED} published, ${s.applications} applications, ${s.businesses} businesses`)],
+    ['admin stats', () => api('GET', '/admin/recruitment/stats', { token: admin }).then(s => `${s.jobsOPEN} open, ${s.applications} applications, ${s.businesses} businesses`)],
     ['company subscriptions', () => api('GET', '/admin/subscription/company-subscriptions', { token: admin }).then(p => `${p.totalElements ?? p.content?.length} recruiter subscriptions`)]
   ];
   for (const [name, probe] of probes) {

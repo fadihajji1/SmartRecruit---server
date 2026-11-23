@@ -16,6 +16,8 @@ public interface ApplicationRepository extends JpaRepository<Application, UUID> 
 
 	List<Application> findAllByJob_Id(UUID jobId);
 
+	long countByStatus(com.smartrecruit.recruitment.model.ApplicationStatus status);
+
 	Page<Application> findAllByCandidateId(UUID candidateId, Pageable pageable);
 
 	Optional<Application> findByIdAndCandidateId(UUID id, UUID candidateId);

@@ -8,6 +8,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.smartrecruit.interview.client.RecruitmentClient;
+import com.smartrecruit.interview.events.InterviewEvents;
 import com.smartrecruit.interview.dto.CreateInterviewRequest;
 import com.smartrecruit.interview.dto.DelayRequestDto;
 import com.smartrecruit.interview.dto.DelayRequestResponse;
@@ -27,40 +29,62 @@ import com.smartrecruit.interview.repository.InterviewRepository;
 public class InterviewService {
     private final InterviewRepository interviews;
     private final DelayRequestRepository delayRequests;
+    private final RecruitmentClient recruitment;
+    private final InterviewEvents events;
 
-    public InterviewService(InterviewRepository interviews, DelayRequestRepository delayRequests) {
+    public InterviewService(InterviewRepository interviews, DelayRequestRepository delayRequests,
+            RecruitmentClient recruitment, InterviewEvents events) {
         this.interviews = interviews;
         this.delayRequests = delayRequests;
+        this.recruitment = recruitment;
+        this.events = events;
+    }
+
+    private InterviewResponse view(Interview interview) {
+        return InterviewResponse.from(interview,
+                delayRequests.findFirstByInterviewIdAndStatusOrderByCreatedAtDesc(interview.getId(),
+                        DelayRequestStatus.PENDING).orElse(null));
     }
 
     @Transactional(readOnly = true)
     public List<InterviewResponse> getRecruiterInterviews(UUID recruiterId) {
         return interviews.findByRecruiterIdOrderByScheduledAtAsc(recruiterId).stream()
-                .map(InterviewResponse::from).toList();
+                .map(this::view).toList();
     }
 
     @Transactional(readOnly = true)
     public List<InterviewResponse> getCandidateInterviews(UUID candidateId) {
         return interviews.findByCandidateIdOrderByScheduledAtAsc(candidateId).stream()
-                .map(InterviewResponse::from).toList();
+                .map(this::view).toList();
     }
 
     @Transactional
-    public InterviewResponse create(UUID recruiterId, CreateInterviewRequest request) {
+    public InterviewResponse create(UUID recruiterId, String bearerToken, CreateInterviewRequest request) {
         validateMeetingUrl(request.externalMeetingUrl());
-        return InterviewResponse.from(interviews.save(new Interview(request.applicationId(), request.candidateId(),
-                recruiterId, request.jobId(), request.scheduledAt(), request.externalMeetingUrl().trim())));
+        RecruitmentClient.ApplicationSummary application =
+                recruitment.recruiterApplication(request.applicationId(), bearerToken);
+        if ("UNAVAILABLE".equals(application.status()) || "REJECTED".equals(application.status())) {
+            throw new InvalidInterviewStateException("Interviews cannot be scheduled for a " 
+                    + application.status().toLowerCase() + " application");
+        }
+        Interview interview = new Interview(request.applicationId(), application.candidateId(), recruiterId,
+                application.jobId(), request.scheduledAt(), request.externalMeetingUrl().trim());
+        interview.describe(application.jobTitle(), application.candidateName(), request.durationMinutes(),
+                request.notes());
+        interview = interviews.save(interview);
+        events.publish("INTERVIEW_SCHEDULED", interview, interview.getCandidateId(), null);
+        return view(interview);
     }
 
     @Transactional(readOnly = true)
     public InterviewResponse getForRecruiter(UUID recruiterId, UUID interviewId) {
-        return InterviewResponse.from(interviews.findByIdAndRecruiterId(interviewId, recruiterId)
+        return view(interviews.findByIdAndRecruiterId(interviewId, recruiterId)
                 .orElseThrow(InterviewNotFoundException::new));
     }
 
     @Transactional(readOnly = true)
     public InterviewResponse getForCandidate(UUID candidateId, UUID interviewId) {
-        return InterviewResponse.from(interviews.findByIdAndCandidateId(interviewId, candidateId)
+        return view(interviews.findByIdAndCandidateId(interviewId, candidateId)
                 .orElseThrow(InterviewNotFoundException::new));
     }
 
@@ -69,8 +93,13 @@ public class InterviewService {
         validateMeetingUrl(request.externalMeetingUrl());
         Interview interview = recruiterInterview(recruiterId, interviewId);
         ensureScheduled(interview);
+        boolean rescheduled = !request.scheduledAt().equals(interview.getScheduledAt());
         interview.update(request.scheduledAt(), request.externalMeetingUrl().trim());
-        return InterviewResponse.from(interviews.save(interview));
+        interview.describe(null, null, request.durationMinutes(), request.notes());
+        interview = interviews.save(interview);
+        events.publish(rescheduled ? "INTERVIEW_RESCHEDULED" : "INTERVIEW_UPDATED", interview,
+                interview.getCandidateId(), null);
+        return view(interview);
     }
 
     @Transactional
@@ -78,7 +107,9 @@ public class InterviewService {
         Interview interview = recruiterInterview(recruiterId, interviewId);
         ensureScheduled(interview);
         interview.cancel();
-        return InterviewResponse.from(interviews.save(interview));
+        interview = interviews.save(interview);
+        events.publish("INTERVIEW_CANCELLED", interview, interview.getCandidateId(), null);
+        return view(interview);
     }
 
     @Transactional
@@ -87,7 +118,9 @@ public class InterviewService {
                 .orElseThrow(InterviewNotFoundException::new);
         ensureScheduled(interview);
         interview.cancel();
-        return InterviewResponse.from(interviews.save(interview));
+        interview = interviews.save(interview);
+        events.publish("INTERVIEW_CANCELLED", interview, interview.getRecruiterId(), null);
+        return view(interview);
     }
 
     @Transactional
@@ -95,7 +128,9 @@ public class InterviewService {
         Interview interview = recruiterInterview(recruiterId, interviewId);
         ensureScheduled(interview);
         interview.markDone();
-        return InterviewResponse.from(interviews.save(interview));
+        interview = interviews.save(interview);
+        events.publish("INTERVIEW_COMPLETED", interview, interview.getCandidateId(), null);
+        return view(interview);
     }
 
     @Transactional
@@ -108,6 +143,7 @@ public class InterviewService {
             throw new InvalidInterviewStateException("A delay request is already pending");
         }
         DelayRequest saved = delayRequests.save(new DelayRequest(interview, candidateId, request.proposedScheduledAt()));
+        events.publish("INTERVIEW_DELAY_REQUESTED", interview, interview.getRecruiterId(), request.proposedScheduledAt());
         return DelayRequestResponse.from(saved, interviewId);
     }
 
@@ -126,7 +162,10 @@ public class InterviewService {
         } else {
             request.reject();
         }
-        return DelayRequestResponse.from(delayRequests.save(request), interviewId);
+        DelayRequestResponse response = DelayRequestResponse.from(delayRequests.save(request), interviewId);
+        events.publish(approve ? "INTERVIEW_DELAY_APPROVED" : "INTERVIEW_DELAY_REJECTED", interview,
+                interview.getCandidateId(), request.getProposedScheduledAt());
+        return response;
     }
 
     private Interview recruiterInterview(UUID recruiterId, UUID interviewId) {
@@ -145,12 +184,14 @@ public class InterviewService {
             URI uri = URI.create(value.trim());
             String host = uri.getHost() == null ? "" : uri.getHost().toLowerCase();
             boolean supportedHost = host.equals("zoom.us") || host.endsWith(".zoom.us")
-                    || host.equals("meet.google.com") || host.endsWith(".google.com");
+                    || host.equals("meet.google.com")
+                    || host.equals("teams.microsoft.com") || host.equals("teams.live.com")
+                    || host.endsWith(".webex.com");
             if (!"https".equalsIgnoreCase(uri.getScheme()) || !supportedHost) {
-                throw new IllegalArgumentException("externalMeetingUrl must be a supported HTTPS Zoom or Google Meet URL");
+                throw new IllegalArgumentException("externalMeetingUrl must be an HTTPS Zoom, Google Meet, Microsoft Teams or Webex link");
             }
         } catch (IllegalArgumentException ex) {
-            throw new IllegalArgumentException("externalMeetingUrl must be a supported HTTPS Zoom or Google Meet URL");
+            throw new IllegalArgumentException("externalMeetingUrl must be an HTTPS Zoom, Google Meet, Microsoft Teams or Webex link");
         }
     }
 }

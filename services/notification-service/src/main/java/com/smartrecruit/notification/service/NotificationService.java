@@ -31,41 +31,33 @@ public class NotificationService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<NotificationResponse> getNotificationsForUser(String userEmail, Boolean readFilter) {
-		String email = normalizeEmail(userEmail);
-		List<Notification> list;
-		if (readFilter != null) {
-			list = notificationRepository.findByRecipientEmailIgnoreCaseAndReadOrderByCreatedAtDesc(email, readFilter);
-		} else {
-			list = notificationRepository.findByRecipientEmailIgnoreCaseOrderByCreatedAtDesc(email);
-		}
-		return list.stream().map(NotificationResponse::from).toList();
+	public List<NotificationResponse> getNotificationsForUser(UUID userId, String userEmail, Boolean readFilter) {
+		return notificationRepository.findInbox(userId, normalizeEmail(userEmail), readFilter).stream()
+				.map(NotificationResponse::from).toList();
 	}
 
 	@Transactional(readOnly = true)
-	public UnreadCountResponse getUnreadCount(String userEmail) {
-		String email = normalizeEmail(userEmail);
-		long count = notificationRepository.countByRecipientEmailIgnoreCaseAndReadFalse(email);
-		return new UnreadCountResponse(count);
+	public UnreadCountResponse getUnreadCount(UUID userId, String userEmail) {
+		return new UnreadCountResponse(notificationRepository.countUnread(userId, normalizeEmail(userEmail)));
 	}
 
 	@Transactional
-	public NotificationResponse markAsRead(UUID notificationId, String userEmail) {
-		Notification notification = findAndVerifyOwnership(notificationId, userEmail);
+	public NotificationResponse markAsRead(UUID notificationId, UUID userId, String userEmail) {
+		Notification notification = findAndVerifyOwnership(notificationId, userId, userEmail);
 		notification.markAsRead();
 		return NotificationResponse.from(notificationRepository.save(notification));
 	}
 
 	@Transactional
-	public NotificationResponse markAsUnread(UUID notificationId, String userEmail) {
-		Notification notification = findAndVerifyOwnership(notificationId, userEmail);
+	public NotificationResponse markAsUnread(UUID notificationId, UUID userId, String userEmail) {
+		Notification notification = findAndVerifyOwnership(notificationId, userId, userEmail);
 		notification.markAsUnread();
 		return NotificationResponse.from(notificationRepository.save(notification));
 	}
 
 	@Transactional
-	public void deleteNotification(UUID notificationId, String userEmail) {
-		Notification notification = findAndVerifyOwnership(notificationId, userEmail);
+	public void deleteNotification(UUID notificationId, UUID userId, String userEmail) {
+		Notification notification = findAndVerifyOwnership(notificationId, userId, userEmail);
 		notificationRepository.delete(notification);
 	}
 
@@ -117,23 +109,23 @@ public class NotificationService {
 		return saved.stream().map(NotificationResponse::from).toList();
 	}
 
-	/**
-	 * Called by the Kafka DomainEventConsumer. Events identify recipients by user id, but notifications are
-	 * stored by recipient email, so they cannot be addressed yet. TODO: resolve user ids to emails (identity-service)
-	 * or carry the recipient email in the event payload.
-	 */
-	public void createFromEvent(UUID eventId, String eventType, Set<UUID> recipients, String title, String content, String type) {
-		logger.info("Skipping domain event {} ({}) for {} recipient id(s): recipient emails are not available", eventId, eventType, recipients.size());
+	/** Creates one notification per recipient for a Kafka domain event; redelivered events are ignored. */
+	@Transactional
+	public void createFromEvent(UUID eventId, String eventType, Set<UUID> recipients, String title, String content,
+			NotificationType type, String link) {
+		for (UUID recipient : recipients) {
+			if (recipient == null || notificationRepository.existsBySourceEventIdAndRecipientUserId(eventId, recipient)) {
+				continue;
+			}
+			notificationRepository.save(Notification.fromEvent(recipient, eventId, eventType, title, content, type, link));
+		}
+		logger.debug("Created notifications for event {} ({})", eventId, eventType);
 	}
 
-	private Notification findAndVerifyOwnership(UUID id, String userEmail) {
-		Notification notification = notificationRepository.findById(id)
-				.orElseThrow(NotificationNotFoundException::new);
-		
-		if (!notification.getRecipientEmail().equalsIgnoreCase(normalizeEmail(userEmail))) {
-			throw new ForbiddenNotificationAccessException("Notification does not belong to user");
-		}
-		return notification;
+	private Notification findAndVerifyOwnership(UUID id, UUID userId, String userEmail) {
+		if (!notificationRepository.existsById(id)) throw new NotificationNotFoundException();
+		return notificationRepository.findOwned(id, userId, normalizeEmail(userEmail))
+				.orElseThrow(() -> new ForbiddenNotificationAccessException("Notification does not belong to user"));
 	}
 
 	private static String normalizeEmail(String email) {

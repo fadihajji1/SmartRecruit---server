@@ -11,7 +11,12 @@ public record ApplicationResponse(
 		UUID jobId,
 		UUID candidateId,
 		UUID candidateCvId,
-		String status,
+		String message,
+		String jobTitle,
+		String businessName,
+		String candidateName,
+		String candidateEmail,
+		@Schema(description = "PENDING, REVIEWING, INTERVIEW, HIRED, REJECTED or UNAVAILABLE") String status,
 		Instant createdAt,
 		Instant updatedAt) {
 }

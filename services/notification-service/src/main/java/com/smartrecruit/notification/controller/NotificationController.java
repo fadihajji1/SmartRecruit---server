@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -60,16 +61,14 @@ public class NotificationController {
 			@AuthenticationPrincipal Jwt jwt,
 			@Parameter(description = "Optional filter: true for read notifications, false for unread notifications")
 			@RequestParam(required = false) Boolean read) {
-		String userEmail = getUserEmail(jwt);
-		return notificationService.getNotificationsForUser(userEmail, read);
+		return notificationService.getNotificationsForUser(getUserId(jwt), getUserEmail(jwt), read);
 	}
 
 	@GetMapping("/unread-count")
 	@SecurityRequirement(name = "bearerAuth")
 	@Operation(summary = "Get unread notification count", description = "Returns the number of unread notifications for the authenticated user.")
 	public UnreadCountResponse getUnreadCount(@AuthenticationPrincipal Jwt jwt) {
-		String userEmail = getUserEmail(jwt);
-		return notificationService.getUnreadCount(userEmail);
+		return notificationService.getUnreadCount(getUserId(jwt), getUserEmail(jwt));
 	}
 
 	@PatchMapping("/{id}/read")
@@ -86,8 +85,7 @@ public class NotificationController {
 	public NotificationResponse markAsRead(
 			@AuthenticationPrincipal Jwt jwt,
 			@PathVariable UUID id) {
-		String userEmail = getUserEmail(jwt);
-		return notificationService.markAsRead(id, userEmail);
+		return notificationService.markAsRead(id, getUserId(jwt), getUserEmail(jwt));
 	}
 
 	@PatchMapping("/{id}/unread")
@@ -104,8 +102,7 @@ public class NotificationController {
 	public NotificationResponse markAsUnread(
 			@AuthenticationPrincipal Jwt jwt,
 			@PathVariable UUID id) {
-		String userEmail = getUserEmail(jwt);
-		return notificationService.markAsUnread(id, userEmail);
+		return notificationService.markAsUnread(id, getUserId(jwt), getUserEmail(jwt));
 	}
 
 	@DeleteMapping("/{id}")
@@ -123,12 +120,13 @@ public class NotificationController {
 	public void deleteNotification(
 			@AuthenticationPrincipal Jwt jwt,
 			@PathVariable UUID id) {
-		String userEmail = getUserEmail(jwt);
-		notificationService.deleteNotification(id, userEmail);
+		notificationService.deleteNotification(id, getUserId(jwt), getUserEmail(jwt));
 	}
 
 	@PostMapping
 	@ResponseStatus(HttpStatus.CREATED)
+	@PreAuthorize("hasRole('PLATFORM_ADMINISTRATOR')")
+	@SecurityRequirement(name = "bearerAuth")
 	@Operation(
 			summary = "Create a new notification",
 			description = "Creates a notification for a candidate or recruiter (Used by system/services or Swagger testing)."
@@ -139,6 +137,8 @@ public class NotificationController {
 
 	@PostMapping("/seed-sample")
 	@ResponseStatus(HttpStatus.CREATED)
+	@PreAuthorize("hasRole('PLATFORM_ADMINISTRATOR')")
+	@SecurityRequirement(name = "bearerAuth")
 	@Operation(
 			summary = "Seed sample notifications for testing",
 			description = "Generates sample notifications for the authenticated user (or specified target email) to easily test Swagger UI."
@@ -154,9 +154,11 @@ public class NotificationController {
 	}
 
 	private static String getUserEmail(Jwt jwt) {
-		if (jwt == null || jwt.getSubject() == null) {
-			return "demo@smartrecruit.com";
-		}
 		return jwt.getSubject();
+	}
+
+	private static UUID getUserId(Jwt jwt) {
+		String value = jwt.getClaimAsString("user_id");
+		return value == null ? null : UUID.fromString(value);
 	}
 }
