@@ -1027,22 +1027,21 @@ The `api-gateway` Spring Cloud Gateway application is the public API entry point
 | `/api/v1/notifications/**`                                                               | `notification-service` |
 | `/api/v1/recruiter/analytics/**`                                                          | `analytics-service`    |
 
-The local Compose stack currently starts Identity, Candidate/AI, Subscription, Notification and Analytics. Recruitment and Interview are routed but are not included in the Compose application containers yet.
+The Compose `app` profile starts all seven services, the gateway and the frontend (`docker compose --profile app up`); every service listens on 8080 inside its container.
 
 ### Production
 
-Apply `kubernetes/api-gateway.yaml` for the gateway Deployment/LoadBalancer Service and stable ClusterIP Services for backend workloads. Build and publish the gateway image from the repository root:
+Apply the whole stack with `kubectl apply -k kubernetes/` after creating the `smartrecruit-secrets` Secret (see `kubernetes/README.md`). The manifests define a Deployment and a ClusterIP Service per service (all on port 8080), the gateway and frontend with two replicas each, PostgreSQL (one database per service), Kafka, MinIO, a shared ConfigMap and an Ingress that sends `/api` to the gateway and everything else to the frontend.
+
+Build each image from the repository root with the shared `Dockerfile`, for example:
 
 ```text
-mvn -pl services/api-gateway -am package
-docker build -t smartrecruit/api-gateway:latest -f services/api-gateway/Dockerfile .
+docker build -t smartrecruit/api-gateway:latest --build-arg MODULE=services/api-gateway --build-arg APP_JAR=api-gateway .
 ```
 
-Push the image to a registry accessible by the cluster, or update the manifest to the published image.
+Push the images to a registry the cluster can reach and set the registry and tag in `kubernetes/kustomization.yaml`.
 
-Backend Deployments are managed separately and must expose the matching `app` label and container port declared by their Kubernetes Service. The identity service uses port `8082`; the other services use `8080`. Create the `smartrecruit-secrets` Kubernetes Secret with key `identity-jwt-secret` before starting the gateway.
-
-Gateway routes use Kubernetes Service DNS names directly (for example, `identity-service:8082`). Kubernetes DNS and ClusterIP Services provide discovery and in-cluster load balancing; no Eureka server, Kubernetes API credentials, or Spring Cloud Kubernetes discovery client is required.
+Gateway routes use Kubernetes Service DNS names directly (for example, `http://identity-service:8080`). Kubernetes DNS and ClusterIP Services provide discovery and in-cluster load balancing; no Eureka server, Kubernetes API credentials, or Spring Cloud Kubernetes discovery client is required.
 
 Kubernetes provides the deployment platform:
 

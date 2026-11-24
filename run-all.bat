@@ -61,11 +61,13 @@ if /I not "%1"=="nobuild" (
   if not defined BUILD_DRIVE ( echo No free drive letter to build from. & pause & exit /b 1 )
   subst !BUILD_DRIVE! "%CD%"
   pushd !BUILD_DRIVE!\
-  call mvnw.cmd -q -DskipTests package
+  REM the build output is also kept in build.log so errors can be read after the window closes
+  call mvnw.cmd -q -DskipTests package > build.log 2>&1
   set "BUILD_RESULT=!errorlevel!"
+  echo EXIT=!BUILD_RESULT!>> build.log
   popd
   subst !BUILD_DRIVE! /d
-  if not "!BUILD_RESULT!"=="0" ( echo BUILD FAILED - see the errors above. & pause & exit /b 1 )
+  if not "!BUILD_RESULT!"=="0" ( type build.log & echo BUILD FAILED - see the errors above and in build.log. & pause & exit /b 1 )
   echo       Build OK.
 ) else (
   echo [3/5] Skipping build.

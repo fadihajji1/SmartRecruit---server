@@ -1,7 +1,12 @@
+# Public API entry point (Spring Cloud Gateway): validates JWTs and routes /api/v1/** to the services
+# by their Kubernetes service names. Stateless, so it runs two replicas.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: api-gateway-deployment
+  name: api-gateway
+  labels:
+    app: api-gateway
+    app.kubernetes.io/part-of: smartrecruit
 spec:
   replicas: 2
   selector:
@@ -11,7 +16,12 @@ spec:
     metadata:
       labels:
         app: api-gateway
+        app.kubernetes.io/part-of: smartrecruit
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
       containers:
         - name: api-gateway
           image: smartrecruit/api-gateway:latest
@@ -19,19 +29,50 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: smartrecruit-config
           env:
+            - name: SERVER_PORT
+              value: "8080"
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
                   name: smartrecruit-secrets
                   key: identity-jwt-secret
-          readinessProbe:
+            - name: IDENTITY_SERVICE_URL
+              value: "http://identity-service:8080"
+            - name: RECRUITMENT_SERVICE_URL
+              value: "http://recruitment-service:8080"
+            - name: CANDIDATE_AI_SERVICE_URL
+              value: "http://candidate-ai-service:8080"
+            - name: SUBSCRIPTION_SERVICE_URL
+              value: "http://subscription-service:8080"
+            - name: INTERVIEW_SERVICE_URL
+              value: "http://interview-service:8080"
+            - name: NOTIFICATION_SERVICE_URL
+              value: "http://notification-service:8080"
+            - name: ANALYTICS_SERVICE_URL
+              value: "http://analytics-service:8080"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          startupProbe:
             tcpSocket:
               port: http
-            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
             periodSeconds: 10
+            failureThreshold: 3
           livenessProbe:
             tcpSocket:
               port: http
-            initialDelaySeconds: 30
             periodSeconds: 20
+            failureThreshold: 3

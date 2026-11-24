@@ -1,7 +1,86 @@
+# Interviews and delay requests. Calls Recruitment through a Feign client (timeouts, one safe retry,
+# Resilience4j circuit breaker) using the Kubernetes service name.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: interview-service
+  labels:
+    app: interview-service
+    app.kubernetes.io/part-of: smartrecruit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: interview-service
+  template:
+    metadata:
+      labels:
+        app: interview-service
+        app.kubernetes.io/part-of: smartrecruit
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+      containers:
+        - name: interview-service
+          image: smartrecruit/interview-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: smartrecruit-config
+          env:
+            - name: SERVER_PORT
+              value: "8080"
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: smartrecruit-secrets
+                  key: identity-jwt-secret
+            - name: INTERVIEW_DB_URL
+              value: "jdbc:postgresql://postgres:5432/interview_db"
+            - name: INTERVIEW_DB_USERNAME
+              value: "smartrecruit"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smartrecruit-secrets
+                  key: postgres-password
+            - name: RECRUITMENT_SERVICE_URL
+              value: "http://recruitment-service:8080"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              memory: 768Mi
+          startupProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: http
+            periodSeconds: 20
+            failureThreshold: 3
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: interview-service
+  labels:
+    app: interview-service
+    app.kubernetes.io/part-of: smartrecruit
 spec:
   type: ClusterIP
   selector:
@@ -9,4 +88,4 @@ spec:
   ports:
     - name: http
       port: 8080
-      targetPort: 8080
+      targetPort: http

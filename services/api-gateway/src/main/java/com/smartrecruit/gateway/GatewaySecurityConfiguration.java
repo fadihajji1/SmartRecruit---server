@@ -35,8 +35,10 @@ public class GatewaySecurityConfiguration {
 		return http
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
 				.authorizeExchange(authorize -> authorize
+						.pathMatchers("/actuator/health", "/actuator/info").permitAll()
 						.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers(HttpMethod.GET, "/api/v1/jobs", "/api/v1/jobs/**").permitAll()
+						.pathMatchers(HttpMethod.GET, "/api/v1/subscriptions/plans").permitAll()
 						.anyExchange().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2.jwt(Customizer.withDefaults()))
 				.build();

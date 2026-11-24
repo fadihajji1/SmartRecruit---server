@@ -2,13 +2,10 @@ package com.smartrecruit.notification.dto;
 
 import java.time.Instant;
 
-public record ApiError(
-		int status,
-		String error,
-		String message,
-		Instant timestamp
-) {
-	public static ApiError of(int status, String error, String message) {
-		return new ApiError(status, error, message, Instant.now());
+/** The documented error contract shared by every SmartRecruit service. */
+public record ApiError(Instant timestamp, int status, String code, String message, String path) {
+
+	public static ApiError of(int status, String code, String message, String path) {
+		return new ApiError(Instant.now(), status, code, message, path);
 	}
 }
