@@ -31,7 +31,7 @@ public class Interview {
     @Column(name = "scheduled_at", nullable = false)
     private Instant scheduledAt;
 
-    @Column(name = "external_meeting_url", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "external_meeting_url", columnDefinition = "TEXT")
     private String externalMeetingUrl;
 
     @Column(name = "job_title", length = 250)

@@ -12,7 +12,7 @@ Everything the platform needs runs in the `smartrecruit` namespace:
 | `*-service.yaml` | One Deployment and one ClusterIP Service per backend service, all on port 8080 |
 | `api-gateway/` | The public API entry point, two replicas |
 | `frontend.yaml` | The Angular app served by nginx, two replicas |
-| `ingress.yaml` | `https://<host>/` to the app and `https://<host>/api` to the gateway |
+| `ingress.yaml` | `https://<host>/` to the app, `/api` and the interview-room WebSockets (`/ws`) to the gateway |
 
 Services find each other through Kubernetes DNS (`http://recruitment-service:8080`, …). No Eureka or discovery client is needed.
 
@@ -53,4 +53,5 @@ Services become ready when `/actuator/health` answers (database reachable). Star
 
 - **Managed data stores:** to use a managed PostgreSQL, Kafka or S3, remove the matching `infra/` file from `kustomization.yaml` and change the URLs in the services and `config.yaml`.
 - **Scaling:** the gateway and frontend are stateless and can scale freely. Recruitment drains its event outbox with a scheduler and Identity creates the first administrator at start-up, so keep those at one replica unless you add leader election.
+- **Video interviews:** browsers talk to each other directly (WebRTC); the cluster only relays set-up messages. Candidates on strict company networks may need a TURN server: set `INTERVIEW_TURN_URL`, `INTERVIEW_TURN_USERNAME` and `INTERVIEW_TURN_CREDENTIAL` on interview-service. Keep interview-service at one replica (rooms live in memory).
 - **Resilience:** Interview calls Recruitment through a Feign client with 2 s connect and 5 s read timeouts, one retry for network errors on GET requests, and a circuit breaker that fails fast with a 503 when Recruitment is down.

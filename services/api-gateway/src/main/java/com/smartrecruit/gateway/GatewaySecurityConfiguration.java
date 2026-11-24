@@ -36,6 +36,8 @@ public class GatewaySecurityConfiguration {
 				.csrf(ServerHttpSecurity.CsrfSpec::disable)
 				.authorizeExchange(authorize -> authorize
 						.pathMatchers("/actuator/health", "/actuator/info").permitAll()
+						// interview rooms check the token themselves: browsers cannot send headers on a WebSocket
+						.pathMatchers("/ws/interviews/**").permitAll()
 						.pathMatchers("/api/v1/auth/**").permitAll()
 						.pathMatchers(HttpMethod.GET, "/api/v1/jobs", "/api/v1/jobs/**").permitAll()
 						.pathMatchers(HttpMethod.GET, "/api/v1/subscriptions/plans").permitAll()

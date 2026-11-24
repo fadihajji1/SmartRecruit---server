@@ -60,7 +60,7 @@ public class InterviewService {
 
     @Transactional
     public InterviewResponse create(UUID recruiterId, String bearerToken, CreateInterviewRequest request) {
-        validateMeetingUrl(request.externalMeetingUrl());
+        String link = meetingLink(request.externalMeetingUrl());
         RecruitmentClient.ApplicationSummary application =
                 recruitment.recruiterApplication(request.applicationId(), bearerToken);
         if ("UNAVAILABLE".equals(application.status()) || "REJECTED".equals(application.status())) {
@@ -68,7 +68,7 @@ public class InterviewService {
                     + application.status().toLowerCase() + " application");
         }
         Interview interview = new Interview(request.applicationId(), application.candidateId(), recruiterId,
-                application.jobId(), request.scheduledAt(), request.externalMeetingUrl().trim());
+                application.jobId(), request.scheduledAt(), link);
         interview.describe(application.jobTitle(), application.candidateName(), request.durationMinutes(),
                 request.notes());
         interview = interviews.save(interview);
@@ -90,11 +90,11 @@ public class InterviewService {
 
     @Transactional
     public InterviewResponse update(UUID recruiterId, UUID interviewId, UpdateInterviewRequest request) {
-        validateMeetingUrl(request.externalMeetingUrl());
+        String link = meetingLink(request.externalMeetingUrl());
         Interview interview = recruiterInterview(recruiterId, interviewId);
         ensureScheduled(interview);
         boolean rescheduled = !request.scheduledAt().equals(interview.getScheduledAt());
-        interview.update(request.scheduledAt(), request.externalMeetingUrl().trim());
+        interview.update(request.scheduledAt(), link);
         interview.describe(null, null, request.durationMinutes(), request.notes());
         interview = interviews.save(interview);
         events.publish(rescheduled ? "INTERVIEW_RESCHEDULED" : "INTERVIEW_UPDATED", interview,
@@ -177,6 +177,13 @@ public class InterviewService {
         if (interview.getStatus() != InterviewStatus.SCHEDULED) {
             throw new InvalidInterviewStateException("Only scheduled interviews can be changed");
         }
+    }
+
+    /** Interviews happen in SmartRecruit's own room; an outside link is optional and must be a known provider. */
+    private static String meetingLink(String value) {
+        if (value == null || value.isBlank()) return null;
+        validateMeetingUrl(value);
+        return value.trim();
     }
 
     private static void validateMeetingUrl(String value) {

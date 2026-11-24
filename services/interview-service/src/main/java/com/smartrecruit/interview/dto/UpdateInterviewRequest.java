@@ -11,7 +11,7 @@ import jakarta.validation.constraints.Size;
 
 public record UpdateInterviewRequest(
         @NotNull @Future Instant scheduledAt,
-        @NotBlank @Size(max = 2000) String externalMeetingUrl,
+        @Size(max = 2000) String externalMeetingUrl,
         @Min(15) @Max(480) Integer durationMinutes,
         @Size(max = 4000) String notes) {
 }

@@ -36,6 +36,8 @@ public class ApiSecurityConfiguration {
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/health").permitAll()
 						.requestMatchers("/error").permitAll()
+						// interview rooms authenticate the WebSocket handshake themselves (token in the query string)
+						.requestMatchers("/ws/**").permitAll()
 						.anyRequest().authenticated())
 				.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
 				.build();

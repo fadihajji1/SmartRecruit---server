@@ -58,6 +58,8 @@ spec:
                 secretKeyRef:
                   name: smartrecruit-secrets
                   key: minio-root-password
+            - name: RECRUITMENT_SERVICE_URL
+              value: "http://recruitment-service:8080"
           resources:
             requests:
               cpu: 100m

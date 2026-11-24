@@ -14,6 +14,18 @@ spring:
             response-timeout: 30s
 
           routes:
+            # interview rooms (WebSocket upgrade is forwarded as-is)
+            - id: interview-rooms
+              uri: ${INTERVIEW_SERVICE_URL:http://localhost:8093}
+              predicates:
+                - Path=/ws/interviews/**
+
+            # must come before recruitment-service, which owns the rest of /api/v1/recruiter/applications/**
+            - id: recruiter-application-cv
+              uri: ${CANDIDATE_AI_SERVICE_URL:http://localhost:8091}
+              predicates:
+                - Path=/api/v1/recruiter/applications/*/cv
+
             - id: identity-service
               uri: ${IDENTITY_SERVICE_URL:http://localhost:8082}
               predicates:

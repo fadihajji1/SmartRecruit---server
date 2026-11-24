@@ -103,6 +103,13 @@ GET    /api/v1/recruiter/applications/{applicationId}
 PATCH  /api/v1/recruiter/applications/{applicationId}/status
 ```
 
+### Recruiter CV access (Candidate/AI Service)
+```text
+GET    /api/v1/recruiter/applications/{applicationId}/cv
+```
+
+Streams the CV attached to one of the recruiter's applications. Ownership is checked with the Recruitment Service (Feign, recruiter token forwarded); the file never gets a public URL.
+
 ### Candidate
 ```text
 POST /api/v1/applications
@@ -178,7 +185,15 @@ POST  /api/v1/recruiter/interviews/{interviewId}/delay-request/approve
 POST  /api/v1/recruiter/interviews/{interviewId}/delay-request/reject
 ```
 
-When scheduling, the request includes an external meeting URL, for example a Zoom or Google Meet link.
+Interviews take place in SmartRecruit's own video room. An external meeting URL (Zoom, Google Meet, Teams or Webex) is optional when scheduling.
+
+### Interview rooms
+```text
+GET  /api/v1/interviews/rtc-config          ICE servers and room opening hours
+WS   /ws/interviews/{interviewId}?access_token=<JWT>
+```
+
+The WebSocket only relays WebRTC set-up messages (offer, answer, network candidates), chat lines and camera/microphone state between the interview's recruiter and candidate; audio and video flow directly between the two browsers. The room accepts only those two people, only while the interview is scheduled, from 60 minutes before the start until 120 minutes after its planned end (configurable).
 
 ### Candidate
 ```text
