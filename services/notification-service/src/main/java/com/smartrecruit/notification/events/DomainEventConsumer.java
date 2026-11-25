@@ -68,8 +68,7 @@ public class DomainEventConsumer {
 						NotificationType.APPLICATION_UPDATE, "/recruiter");
 			case "APPLICATION_STATUS_CHANGED":
 				if (recipients.isEmpty()) add(recipients, value(p, "candidateId"));
-				return new Message("Application update", "Your application for " + job + " is now "
-						+ label(value(p, "status")) + ".", NotificationType.APPLICATION_UPDATE, "/applications");
+				return statusMessage(job, value(p, "status"));
 			case "INTERVIEW_SCHEDULED":
 				if (recipients.isEmpty()) add(recipients, value(p, "candidateId"));
 				return new Message("Interview scheduled", "Your interview for " + job + " is on " + when + ".",
@@ -138,6 +137,25 @@ public class DomainEventConsumer {
 		} catch (RuntimeException ex) {
 			return iso;
 		}
+	}
+
+	/** What the candidate reads when a recruiter moves their application. Kept in step with the recruiter's preview. */
+	private static Message statusMessage(String job, String status) {
+		String value = status == null ? "" : status.trim().toUpperCase(Locale.ROOT);
+		return switch (value) {
+			case "HIRED" -> new Message("Congratulations!", "You have been selected for " + job
+					+ ". The recruiter will contact you about the next steps.", NotificationType.APPLICATION_UPDATE, "/applications");
+			case "REJECTED" -> new Message("Application update", "The company decided not to move forward with your application for "
+					+ job + ". Thank you for applying, and good luck with your search.", NotificationType.APPLICATION_UPDATE, "/applications");
+			case "INTERVIEW" -> new Message("Application update", "Your application for " + job
+					+ " moved to the interview stage.", NotificationType.APPLICATION_UPDATE, "/applications");
+			case "REVIEWING" -> new Message("Application update", "Your application for " + job
+					+ " is now under review.", NotificationType.APPLICATION_UPDATE, "/applications");
+			case "PENDING" -> new Message("Application update", "Your application for " + job
+					+ " is back in the Applied stage.", NotificationType.APPLICATION_UPDATE, "/applications");
+			default -> new Message("Application update", "Your application for " + job + " is now "
+					+ label(status) + ".", NotificationType.APPLICATION_UPDATE, "/applications");
+		};
 	}
 
 	private static String label(String value) {
