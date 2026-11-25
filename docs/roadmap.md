@@ -62,7 +62,7 @@ Every phase must preserve:
 ## 5. Final target architecture
 
 ```text
-React
+Angular
   |
 API Gateway
   |

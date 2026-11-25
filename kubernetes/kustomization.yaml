@@ -1,0 +1,42 @@
+# Deploy everything:   kubectl apply -k kubernetes/
+# (create the smartrecruit-secrets Secret first; see secrets.example.yaml)
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: smartrecruit
+resources:
+  - namespace.yaml
+  - config.yaml
+  - infra/postgres.yaml
+  - infra/kafka.yaml
+  - infra/minio.yaml
+  - identity-service.yaml
+  - recruitment-service.yaml
+  - candidate-ai-service.yaml
+  - subscription-service.yaml
+  - interview-service.yaml
+  - notification-service.yaml
+  - analytics-service.yaml
+  - api-gateway/api-gateway-deployment.yaml
+  - api-gateway/api-gateway-service.yaml
+  - frontend.yaml
+  - ingress.yaml
+# point the images at your registry and release tag here
+images:
+  - name: smartrecruit/identity-service
+    newTag: latest
+  - name: smartrecruit/recruitment-service
+    newTag: latest
+  - name: smartrecruit/candidate-ai-service
+    newTag: latest
+  - name: smartrecruit/subscription-service
+    newTag: latest
+  - name: smartrecruit/interview-service
+    newTag: latest
+  - name: smartrecruit/notification-service
+    newTag: latest
+  - name: smartrecruit/analytics-service
+    newTag: latest
+  - name: smartrecruit/api-gateway
+    newTag: latest
+  - name: smartrecruit/frontend
+    newTag: latest

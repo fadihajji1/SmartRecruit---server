@@ -24,7 +24,7 @@ For team consistency, Dockerfiles and Compose configuration are version-controll
 ## 3. Production topology
 
 ```text
-                         React
+                       Angular
                            |
                            v
                     API Gateway / Ingress

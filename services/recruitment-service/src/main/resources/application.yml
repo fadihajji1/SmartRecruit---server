@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: recruitment-service
+
+  datasource:
+    url: ${RECRUITMENT_DB_URL:jdbc:postgresql://localhost:5434/recruitment_db}
+    username: ${RECRUITMENT_DB_USERNAME:smartrecruit}
+    password: ${POSTGRES_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    open-in-view: false
+
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+
+  kafka:
+    # host port published by docker-compose; containers use kafka:19092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9093}
+
+server:
+  port: ${SERVER_PORT:${RECRUITMENT_SERVICE_PORT:8090}}
+
+identity:
+  jwt:
+    secret: ${JWT_SECRET}
+    issuer: ${JWT_ISSUER:smartrecruit-identity}
+
+recruitment:
+  events:
+    topic: ${DOMAIN_EVENTS_TOPIC:smartrecruit.domain-events}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

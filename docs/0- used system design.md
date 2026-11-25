@@ -9,7 +9,7 @@ Yes. For the **SmartRecruit system I documented**, the design is primarily a **m
 | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Microservices Architecture**          | 9 independent business services: Auth/User, Business, Job, Application, CV/AI, Subscription, Interview, Notification, Analytics              |
 | **Database-per-Service**                | Each service owns its PostgreSQL database/schema and data. Services do not directly access another service's DB.                             |
-| **API Gateway**                         | Spring Cloud Gateway provides a single entry point for the React frontend and routes requests to backend services.                           |
+| **API Gateway**                         | Spring Cloud Gateway provides a single entry point for the Angular frontend and routes requests to backend services.                         |
 | **Kubernetes-Native Service Discovery** | Kubernetes Services/DNS provide service discovery instead of Eureka.                                                                         |
 | **Event-Driven Architecture**           | Apache Kafka is used for asynchronous communication and domain events between services.                                                      |
 | **Synchronous REST Communication**      | REST APIs are used when an immediate response is required.                                                                                   |
@@ -33,7 +33,7 @@ Yes. For the **SmartRecruit system I documented**, the design is primarily a **m
 The important distinction is that **Microservices Architecture is the main system design**, while the others support it:
 
 ```
-                         React + TypeScript
+                        Angular + TypeScript
                                 │
                                 ▼
                        ┌─────────────────┐
@@ -102,4 +102,4 @@ Application Service
  Job Service DB
 ```
 
- 
+

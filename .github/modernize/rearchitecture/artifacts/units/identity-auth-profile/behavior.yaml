@@ -1,0 +1,41 @@
+unit: identity-auth-profile
+side_effects:
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:72
+    effect: "Persist a candidate with a BCrypt-encoded password and active account state."
+    must_preserve: true
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:81
+    effect: "Store recruiter employment proof in MinIO and persist only its object key."
+    must_preserve: true
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:100
+    effect: "Attempt object deletion when recruiter database persistence fails."
+    must_preserve: true
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:117
+    effect: "Issue a signed JWT after successful authentication."
+    must_preserve: true
+branches:
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:151
+    condition: "Email already exists, including case-insensitive lookup."
+    behavior: "Reject registration as duplicate email."
+    must_preserve: true
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:162
+    condition: "Password exceeds 72 UTF-8 bytes."
+    behavior: "Reject the request before password encoding."
+    must_preserve: true
+error_paths:
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:103
+    trigger: "Invalid recruiter request, duplicate email, or unavailable storage."
+    outcome: "Return documented 400, 409, or 502 API error."
+    contract: "HTTP 400/409/502 with ApiError"
+    must_preserve: true
+  - source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/controller/AuthController.java:163
+    trigger: "Invalid credentials or inactive account."
+    outcome: "Reject login."
+    contract: "HTTP 401 with ApiError"
+    must_preserve: true
+concurrency:
+  model: sync
+  tx_boundary:
+    source_loc: services/identity-service/src/main/java/com/smartrecruit/identity/service/IdentityService.java:52
+    scope: "Candidate registration, recruiter registration, profile read, and profile update database operations. Recruiter storage is called inside the registration transaction."
+    isolation: "Default datasource isolation"
+    must_preserve: true

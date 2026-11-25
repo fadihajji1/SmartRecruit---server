@@ -1,0 +1,5 @@
+unit: recruitment-service-shell
+side_effects: []
+branches: []
+error_paths: []
+concurrency: {model: sync, tx_boundary: {source_loc: services/recruitment-service/src/main/java/com/smartrecruit/recruitment/RecruitmentServiceApplication.java:1, scope: "No transaction-bearing implementation found.", isolation: "not applicable", must_preserve: false}}

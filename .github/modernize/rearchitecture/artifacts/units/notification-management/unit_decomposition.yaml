@@ -1,0 +1,7 @@
+unit: notification-management
+commit: false
+candidate_splits:
+  - id: services/notification-service/src/main/java/com/smartrecruit/notification/controller/NotificationController.java:49-128
+    drivers: [concern_split, protocol_split]
+    rationale: "Read/list operations and mutation operations have different response, authorization, and transaction behavior."
+    source_slice: {file: services/notification-service/src/main/java/com/smartrecruit/notification/controller/NotificationController.java, lines: [49, 128]}

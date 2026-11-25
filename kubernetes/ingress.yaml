@@ -1,0 +1,45 @@
+# Public entry: the web app at / and the API at /api, on one host with TLS.
+# Replace the host, create the TLS secret (or let cert-manager do it), and match ingressClassName to your controller.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: smartrecruit
+  labels:
+    app.kubernetes.io/part-of: smartrecruit
+  annotations:
+    # CV and employment-proof uploads go up to 10 MB
+    nginx.ingress.kubernetes.io/proxy-body-size: 12m
+    # interview rooms keep a WebSocket open for the whole interview
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - smartrecruit.example.com
+      secretName: smartrecruit-tls
+  rules:
+    - host: smartrecruit.example.com
+      http:
+        paths:
+          - path: /ws
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  name: http
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  name: http
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  name: http

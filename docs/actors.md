@@ -49,7 +49,7 @@ CV files are stored in MinIO/S3-compatible object storage; PostgreSQL stores met
 
 ### Interviews
 - View personal interviews and calendar.
-- Open the external meeting link supplied by the recruiter.
+- Join the interview in the SmartRecruit video room (or an external link if the recruiter added one).
 - Cancel an interview where permitted.
 - Request a delay with a proposed date/time.
 
@@ -69,7 +69,7 @@ CV files are stored in MinIO/S3-compatible object storage; PostgreSQL stores met
 ### Business and recruitment
 - Manage only authorized company information.
 - Create, update, close, reopen and delete job offers according to authorization/subscription rules.
-- View and manage applications belonging to authorized company offers.
+- View and manage applications belonging to authorized company offers, including the CV each candidate sent.
 - Update candidate application status.
 
 ### Interviews
@@ -78,7 +78,7 @@ CV files are stored in MinIO/S3-compatible object storage; PostgreSQL stores met
 - Mark interviews as done.
 - Accept/reject candidate delay requests.
 
-The Interview Service does **not** host the video session. It stores and exposes the external meeting link.
+Interviews take place in SmartRecruit's own video room (WebRTC between the two browsers; the Interview Service only relays the connection set-up). An external meeting link remains optional.
 
 ### Dashboard and subscription
 - View recruitment analytics and export PDF reports.

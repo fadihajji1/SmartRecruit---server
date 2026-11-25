@@ -24,7 +24,7 @@ services:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:?Set PGADMIN_DEFAULT_EMAIL in .env}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:?Set PGADMIN_DEFAULT_PASSWORD in .env}
     ports:
-      - "${PGADMIN_PORT:-5050}:80"
+      - "5050:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
 
@@ -35,7 +35,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: identity_db
     ports:
-      - "${IDENTITY_DB_PORT:-5433}:5432"
+      - "15433:5432"
     volumes:
       - identity_postgres_data:/var/lib/postgresql/data
 
@@ -46,7 +46,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: recruitment_db
     ports:
-      - "${RECRUITMENT_DB_PORT:-5434}:5432"
+      - "5434:5432"
     volumes:
       - recruitment_postgres_data:/var/lib/postgresql/data
 
@@ -57,7 +57,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: candidate_db
     ports:
-      - "${CANDIDATE_DB_PORT:-5435}:5432"
+      - "5435:5432"
     volumes:
       - candidate_postgres_data:/var/lib/postgresql/data
 
@@ -68,7 +68,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: subscription_db
     ports:
-      - "${SUBSCRIPTION_DB_PORT:-5436}:5432"
+      - "5436:5432"
     volumes:
       - subscription_postgres_data:/var/lib/postgresql/data
 
@@ -79,7 +79,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: interview_db
     ports:
-      - "${INTERVIEW_DB_PORT:-5437}:5432"
+      - "5437:5432"
     volumes:
       - interview_postgres_data:/var/lib/postgresql/data
 
@@ -90,7 +90,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: notification_db
     ports:
-      - "${NOTIFICATION_DB_PORT:-5438}:5432"
+      - "5438:5432"
     volumes:
       - notification_postgres_data:/var/lib/postgresql/data
 
@@ -101,7 +101,7 @@ services:
       <<: *postgres-environment
       POSTGRES_DB: analytics_db
     ports:
-      - "${ANALYTICS_DB_PORT:-5439}:5432"
+      - "5439:5432"
     volumes:
       - analytics_postgres_data:/var/lib/postgresql/data
 
@@ -116,7 +116,7 @@ services:
       - -c
       - redis-server --appendonly yes --requirepass "$$REDIS_PASSWORD"
     ports:
-      - "${REDIS_PORT:-6380}:6379"
+      - "6380:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -133,13 +133,13 @@ services:
     hostname: kafka
     restart: unless-stopped
     ports:
-      - "${KAFKA_PORT:-9093}:9092"
+      - "9093:9092"
     environment:
       CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_LISTENERS: PLAINTEXT://:19092,CONTROLLER://:19093,PLAINTEXT_HOST://:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:${KAFKA_PORT:-9093}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:19092,PLAINTEXT_HOST://localhost:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:19093
@@ -169,7 +169,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "${KAFKA_UI_PORT:-8081}:8080"
+      - "8081:8080"
     environment:
       DYNAMIC_CONFIG_ENABLED: "true"
       KAFKA_CLUSTERS_0_NAME: smartrecruit-local
@@ -184,11 +184,13 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
     ports:
-      - "${MINIO_API_PORT:-9002}:9000"
-      - "${MINIO_CONSOLE_PORT:-9003}:9001"
+      - "9002:9000"
+      - "9003:9001"
     volumes:
       - minio_data:/data
 
+  # Application services (docker compose --profile app up -d --build). Every service listens on 8080 inside
+  # its container; host ports match the local run-all.bat layout.
   identity-service:
     profiles: ["app"]
     build:
@@ -200,12 +202,12 @@ services:
     container_name: smartrecruit-identity-service
     restart: unless-stopped
     environment:
-      IDENTITY_SERVICE_PORT: ${IDENTITY_SERVICE_PORT:-8082}
+      IDENTITY_SERVICE_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
       IDENTITY_DB_URL: jdbc:postgresql://identity-db:5432/identity_db
       IDENTITY_DB_USERNAME: smartrecruit
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
-      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@admin.com}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
       MINIO_ENDPOINT: http://minio:9000
@@ -213,12 +215,224 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
       MINIO_BUCKET: ${MINIO_BUCKET:-smartrecruit-private}
     ports:
-      - "${IDENTITY_SERVICE_PORT:-8082}:${IDENTITY_SERVICE_PORT:-8082}"
+      - "8082:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     depends_on:
       identity-db:
         condition: service_healthy
       minio:
         condition: service_started
+
+  recruitment-service:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/recruitment-service
+        APP_JAR: recruitment-service
+    container_name: smartrecruit-recruitment-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      RECRUITMENT_DB_URL: jdbc:postgresql://recruitment-db:5432/recruitment_db
+      RECRUITMENT_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+    ports:
+      - "8090:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      recruitment-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  candidate-ai-service:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/candidate-ai-service
+        APP_JAR: candidate-ai-service
+    container_name: smartrecruit-candidate-ai-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      CANDIDATE_AI_DB_URL: jdbc:postgresql://candidate-db:5432/candidate_db
+      CANDIDATE_AI_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER in .env}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD in .env}
+      MINIO_CV_BUCKET: ${MINIO_CV_BUCKET:-smartrecruit-cvs}
+      RECRUITMENT_SERVICE_URL: http://recruitment-service:8080
+    ports:
+      - "8091:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      candidate-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_started
+
+  subscription-service:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/subscription-service
+        APP_JAR: subscription-service
+    container_name: smartrecruit-subscription-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      SUBSCRIPTION_DB_URL: jdbc:postgresql://subscription-db:5432/subscription_db
+      SUBSCRIPTION_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+    ports:
+      - "8092:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      subscription-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  interview-service:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/interview-service
+        APP_JAR: interview-service
+    container_name: smartrecruit-interview-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      INTERVIEW_DB_URL: jdbc:postgresql://interview-db:5432/interview_db
+      INTERVIEW_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+      RECRUITMENT_SERVICE_URL: http://recruitment-service:8080
+    ports:
+      - "8093:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      interview-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  notification-service:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/notification-service
+        APP_JAR: notification-service
+    container_name: smartrecruit-notification-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      NOTIFICATION_DB_URL: jdbc:postgresql://notification-db:5432/notification_db
+      NOTIFICATION_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+    ports:
+      - "8094:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      notification-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  analytics-service:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MODULE: services/analytics-service
+        APP_JAR: analytics-service
+    container_name: smartrecruit-analytics-service
+    restart: unless-stopped
+    environment:
+      SERVER_PORT: 8080
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
+      ANALYTICS_DB_URL: jdbc:postgresql://analytics-db:5432/analytics_db
+      ANALYTICS_DB_USERNAME: smartrecruit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:19092
+      DOMAIN_EVENTS_TOPIC: ${DOMAIN_EVENTS_TOPIC:-smartrecruit.domain-events}
+    ports:
+      - "8095:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
 
   api-gateway:
     profiles: ["app"]
@@ -231,26 +445,60 @@ services:
     container_name: smartrecruit-api-gateway
     restart: unless-stopped
     environment:
-      SERVER_PORT: ${API_GATEWAY_PORT:-8080}
+      SERVER_PORT: 8080
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
       JWT_ISSUER: ${JWT_ISSUER:-smartrecruit-identity}
-      IDENTITY_SERVICE_URL: http://identity-service:${IDENTITY_SERVICE_PORT:-8082}
-      RECRUITMENT_SERVICE_URL: http://recruitment-service:${RECRUITMENT_SERVICE_PORT:-8080}
-      CANDIDATE_AI_SERVICE_URL: http://candidate-ai-service:${CANDIDATE_AI_SERVICE_PORT:-8080}
-      SUBSCRIPTION_SERVICE_URL: http://subscription-service:${SUBSCRIPTION_SERVICE_PORT:-8080}
-      INTERVIEW_SERVICE_URL: http://interview-service:${INTERVIEW_SERVICE_PORT:-8080}
-      NOTIFICATION_SERVICE_URL: http://notification-service:${NOTIFICATION_SERVICE_PORT:-8080}
-      ANALYTICS_SERVICE_URL: http://analytics-service:${ANALYTICS_SERVICE_PORT:-8080}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+      IDENTITY_SERVICE_URL: http://identity-service:8080
+      RECRUITMENT_SERVICE_URL: http://recruitment-service:8080
+      CANDIDATE_AI_SERVICE_URL: http://candidate-ai-service:8080
+      SUBSCRIPTION_SERVICE_URL: http://subscription-service:8080
+      INTERVIEW_SERVICE_URL: http://interview-service:8080
+      NOTIFICATION_SERVICE_URL: http://notification-service:8080
+      ANALYTICS_SERVICE_URL: http://analytics-service:8080
     ports:
-      - "${API_GATEWAY_PORT:-8080}:${API_GATEWAY_PORT:-8080}"
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health >/dev/null 2>&1 || curl -fs http://localhost:8080/actuator/health >/dev/null || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     depends_on:
-      - identity-service
+      identity-service:
+        condition: service_started
+      recruitment-service:
+        condition: service_started
+      candidate-ai-service:
+        condition: service_started
+      subscription-service:
+        condition: service_started
+      interview-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
+      analytics-service:
+        condition: service_started
+
+  frontend:
+    profiles: ["app"]
+    build:
+      context: ../SmartRecruit-Stitch-Angular
+    container_name: smartrecruit-frontend
+    restart: unless-stopped
+    environment:
+      API_GATEWAY_HOST: api-gateway:8080
+    ports:
+      - "4200:80"
+    depends_on:
+      api-gateway:
+        condition: service_started
 
   zipkin:
     image: openzipkin/zipkin:3
     container_name: zipkin
     ports:
-      - "${ZIPKIN_PORT:-9411}:9411"
+      - "9411:9411"
 
 volumes:
   pgadmin_data:

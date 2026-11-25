@@ -25,14 +25,17 @@ public class PlatformAdministratorBootstrap implements ApplicationRunner {
 	private final PasswordEncoder passwordEncoder;
 	private final String adminEmail;
 	private final String adminPassword;
+	private final boolean resetPassword;
 
 	public PlatformAdministratorBootstrap(UserRepository users, PasswordEncoder passwordEncoder,
 			@Value("${identity.admin.email:admin@admin.com}") String adminEmail,
-			@Value("${identity.admin.password:}") String adminPassword) {
+			@Value("${identity.admin.password:}") String adminPassword,
+			@Value("${identity.admin.reset-password:false}") boolean resetPassword) {
 		this.users = users;
 		this.passwordEncoder = passwordEncoder;
 		this.adminEmail = adminEmail.trim().toLowerCase();
 		this.adminPassword = adminPassword;
+		this.resetPassword = resetPassword;
 	}
 
 	@Override
@@ -51,6 +54,12 @@ public class PlatformAdministratorBootstrap implements ApplicationRunner {
 			if (!(existingUser instanceof PlatformAdministrator)) {
 				throw new IllegalStateException(
 						"Cannot create default platform administrator; " + adminEmail + " is already in use");
+			}
+			if (resetPassword) {
+				existingUser.setPasswordHash(passwordEncoder.encode(adminPassword));
+				existingUser.setStatus(com.smartrecruit.identity.model.AccountStatus.ACTIVE);
+				users.save(existingUser);
+				logger.info("Reset password of platform administrator {} (ADMIN_RESET_PASSWORD=true)", adminEmail);
 			}
 			return;
 		}

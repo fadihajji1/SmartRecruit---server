@@ -143,6 +143,10 @@ public abstract class User implements UserDetails {
 		return status;
 	}
 
+	public void setPasswordHash(String passwordHash) {
+		this.passwordHash = passwordHash;
+	}
+
 	public void setStatus(AccountStatus status) {
 		this.status = status;
 	}

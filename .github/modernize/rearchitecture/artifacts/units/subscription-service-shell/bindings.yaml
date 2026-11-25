@@ -1,0 +1,9 @@
+unit: subscription-service-shell
+bindings:
+  - type: annotation
+    name: "Spring Boot application and JWT resource server configuration"
+    source_loc: services/subscription-service/src/main/java/com/smartrecruit/subscription/config/ApiSecurityConfiguration.java:24
+    target: subscription service shell
+    must_appear_in_target: true
+    notes: "No subscription controller, entity, repository, or payment adapter was found."
+runtime_config: []
